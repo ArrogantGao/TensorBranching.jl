@@ -25,3 +25,11 @@ function maxmask(bitstrings::AbstractVector{BitStr{N, T}}) where {N, T}
     val = bitstrings[1] & mask
     return Clause(mask, val)
 end
+
+function countones(b::BitStr{N, T}) where{N, T}
+    num = 0
+    for i in 0:N - 1
+        num += Bool((b >> i) & 1)
+    end
+    return num
+end

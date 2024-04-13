@@ -1,9 +1,10 @@
 module TensorBranching
 
-using BitBasis, NearestNeighbors
+using BitBasis, Clustering, NLsolve
 
 include("bitstring.jl")
-include("knn.jl")
+include("clustering.jl")
 include("setcovering.jl")
+include("branching.jl")
 
 end
