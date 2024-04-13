@@ -1,5 +1,9 @@
 module TensorBranching
 
-# Write your package code here.
+using BitBasis, NearestNeighbors
+
+include("bitstring.jl")
+include("knn.jl")
+include("setcovering.jl")
 
 end
