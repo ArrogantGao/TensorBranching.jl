@@ -1,6 +1,6 @@
 function bithclust(bitstrings::Vector{BitStr{N, T}}) where {N, T}
     dm = [bdistance(b1, b2) for b1 in bitstrings, b2 in bitstrings]
-    return hclust(dm, linkage = :complete)
+    return hclust(dm, linkage = :average)
 end
 
 function clustering(bitstrings::Vector{BitStr{N, T}}, k::Int) where {N, T}

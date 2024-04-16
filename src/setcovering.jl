@@ -16,3 +16,18 @@ function setcover(bitstrings::AbstractVector{BitStr{N, T}}, clauses = [Clause{N,
         end
     end
 end
+
+function all_clauses_naive(bs::Vector{BitStr{N, T}}) where{N, T}
+    allclauses = Vector{Clause{N, T}}()
+    for ids in Iterators.product([0:1 for i in 1:length(bs)]...)
+        masks = Bool.([ids...])
+        cbs = bs[masks]
+        if length(cbs) > 0
+            ccbs = clause(cbs)
+            if !(ccbs in allclauses)
+                push!(allclauses, ccbs)
+            end
+        end
+    end
+    return allclauses
+end
