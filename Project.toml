@@ -6,10 +6,12 @@ version = "1.0.0-DEV"
 [deps]
 BitBasis = "50ba71b6-fa0f-514d-ae9a-0916efc90dcf"
 Clustering = "aaaa29a8-35af-508c-8bc3-b662a17a0fe5"
+GenericTensorNetworks = "3521c873-ad32-4bb4-b63d-f4f178f42b49"
 NLsolve = "2774e3e8-f4cf-5e23-947b-6d7e65073b56"
 Reexport = "189a3867-3050-52da-a836-e630ba90ab69"
 
 [compat]
+GenericTensorNetworks = "2"
 julia = "1"
 
 [extras]

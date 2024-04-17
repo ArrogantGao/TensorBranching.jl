@@ -4,6 +4,9 @@ struct Clause{N, T}
 end
 
 Base.show(io::IO, c::Clause{N, T}) where{N, T} = print(io, "Clause($N, $(countones(c.mask)), $T) \n mask = $(c.mask) \n val = $(c.val)")
+booleans(n::Int) = [Clause(bmask(BitStr{n, Int64}, i), bmask(BitStr{n, Int64}, i)) for i=1:n]
+GenericTensorNetworks.:∧(x::Clause, xs::Clause...) = Clause(reduce(|, getfield.(xs, :mask); init=x.mask), reduce(|, getfield.(xs, :val); init=x.val))
+GenericTensorNetworks.:¬(x::Clause) = Clause(x.mask, flip(x.val, x.mask))
 
 # returns true if bit string a is covered by bit string b
 function covered_by(a, b, mask)
@@ -32,6 +35,7 @@ function clauses(clustered_bs)
     return [clause(bitstrings) for bitstrings in clustered_bs]
 end
 
+# TODO: use count_ones instead of this
 function countones(b::BitStr{N, T}) where{N, T}
     num = 0
     for i in 0:N - 1
