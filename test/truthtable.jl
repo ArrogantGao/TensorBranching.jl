@@ -32,4 +32,7 @@ end
     a, b, c, d, e = booleans(5)
     @test !covered_by(tbl, DNF(a ∧ ¬b))
     @test covered_by(tbl, DNF(a ∧ ¬b ∧ d ∧ ¬e, ∧(¬a, ¬b, c, ¬d)))
+    @test covered_by(tbl, DNF(a ∧ ¬b ∧ d ∧ ¬e, ∧(¬a, ¬b, c, ¬d)))
+    @test !covered_by(tbl, DNF(a ∧ ¬b ∧ d ∧ ¬e, ∧(¬a, ¬b, c, ¬d, e)))
+    @test covered_by(tbl, DNF(a ∧ ¬b ∧ d ∧ ¬e, ∧(¬a, ¬b, c, ¬d, e), ∧(¬a, b, ¬c, ¬d, ¬e)))
 end
