@@ -1,5 +1,5 @@
 function sbranches(clauses::Vector{Clause{N, T}}) where{N, T}
-    return [countones(c.mask) for c in clauses]
+    return [count_ones(c.mask) for c in clauses]
 end
 
 function complexity(sbranches::Vector{Int})

@@ -37,6 +37,7 @@ end
 function naive_strategy(tbl::BranchingTable{N}) where N
     return DNF([Clause(bmask(BitStr{N, Int}, 1:N), BitStr(first(x))) for x in tbl.table])
 end
+
 function BitBasis.BitStr(sv::StaticBitVector)
     @assert length(sv.data) == 1 "bit string too long!"
     return BitBasis.BitStr{length(sv), Int}(sv.data[1])
