@@ -19,7 +19,7 @@ function _reduced_alpha_configs(g::SimpleGraph, openvertices::Vector{Int})
 	alpha_configs = solve(problem, ConfigsMax(; bounded=false))
 	reduced_alpha_tensor = mis_compactify!(alpha_tensor)
 	# set the corresponding entries to 0.
-	alpha_configs[iszero.(reduced_alpha_tensor)] .= Ref(zero(eltype(alpha_configs)))
+	alpha_configs[map(iszero, reduced_alpha_tensor)] .= Ref(zero(eltype(alpha_configs)))
 	# post processing
 	configs = alpha_configs
 	return configs
@@ -56,7 +56,7 @@ struct BranchingTable{N, C}
     table::Vector{Vector{StaticBitVector{N, C}}}
 end
 function BranchingTable(arr::AbstractArray{<:CountingTropical{<:Real, <:ConfigEnumerator}})
-    return BranchingTable(filter(!isempty, vec(collect_configs.(arr))))
+    return BranchingTable(filter(!isempty, vec(map(collect_configs, arr))))
 end
 function BranchingTable(n::Int, arr::AbstractVector{<:AbstractVector})
     return BranchingTable([StaticBitVector(n, x) for x in arr])
