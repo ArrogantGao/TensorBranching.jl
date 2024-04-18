@@ -3,7 +3,9 @@ module TensorBranching
 using Clustering, NLsolve
 using Reexport
 using GenericTensorNetworks, GenericTensorNetworks.Graphs
+using Random 
 import EliminateGraphs
+
 
 @reexport using BitBasis
 
@@ -19,5 +21,5 @@ include("setcovering.jl")
 include("branching.jl")
 include("truthtable.jl")
 include("solver.jl")
-
+include("sat_func.jl")
 end
