@@ -1,22 +1,3 @@
-function setcover(bitstrings::AbstractVector{BitStr{N, T}}, clauses = [Clause{N, T}[]]) where {N, T}
-    # generate longest clauses covering 1 bitstring
-    for (k, b) in enumerate(bitstrings)
-        clause = Clause{N, T}(bmask(BitStr{N, T}, 1:length(b)), b)
-        clauses[1][clause] = [k]
-    end
-    # generate clauses covering 2 bitstrings
-    for kcover in 2:length(bitstrings)
-        for c in clauses[kcover-1]
-            # try to combine c with a bitstring
-            for b in bitstrings
-                if !covered_by(c.val, b, c.mask)
-                    push!(clauses[kcover], Clause{N, T}(c.mask | bmask(BitStr{N, T}, 1:length(b)), c.val | b))
-                end
-            end
-        end
-    end
-end
-
 function all_clauses_naive(bs::Vector{BitStr{N, T}}) where{N, T}
     allclauses = Vector{Clause{N, T}}()
     for ids in Iterators.product([0:1 for i in 1:length(bs)]...)
@@ -30,4 +11,48 @@ function all_clauses_naive(bs::Vector{BitStr{N, T}}) where{N, T}
         end
     end
     return allclauses
+end
+
+function subcovers_naive(bs::Vector{BitStr{N, T}}) where{N, T}
+    allclauses = all_clauses_naive(bs)
+    allcovers = Vector{SubCover{N, T}}()
+    for (i, c) in enumerate(allclauses)
+        ids = Vector{Int}()
+        for (j, b) in enumerate(bs)
+            if covered_by(b, c)
+                push!(ids, j)
+            end
+        end
+        push!(allcovers, SubCover(ids, c))
+    end
+    return allcovers
+end
+
+function subcovers(bs::Vector{BitStr{N, T}}) where{N, T}
+    allcovers = [Vector{SubCover{N, T}}() for i in 1:length(bs)]
+    allcovers[1] = [SubCover([i], Clause(bmask(BitStr{N, T}, 1:length(bs[i])), bs[i])) for i in 1:length(bs)]
+    for i in 2:length(bs) - 1
+        temp_clauses = Vector{Clause{N, T}}()
+        for c in allcovers[i-1]
+            for b in bs
+                c_new = gather2(c.clause, Clause(bmask(BitStr{N, T}, 1:length(b)), b))
+                if !(c_new in temp_clauses)
+                    push!(temp_clauses, c_new)
+                end
+            end
+        end
+        for c in temp_clauses
+            ids = Vector{Int}()
+            for (j, b) in enumerate(bs)
+                if covered_by(b, c)
+                    push!(ids, j)
+                end
+            end
+            j = length(ids)
+            if ids ∉ allcovers[j]
+                push!(allcovers[j], SubCover(ids, c))
+            end
+        end
+    end
+    return vcat(allcovers...)
 end

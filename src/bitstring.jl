@@ -1,6 +1,9 @@
 struct Clause{N, T}
     mask::BitStr{N, T}
     val::BitStr{N, T}
+    function Clause(mask::BitStr{N, T}, val::BitStr{N, T}) where{N, T}
+        new{N, T}(mask, val & mask)
+    end
 end
 
 Clause(b::BitStr{N, T}) where {N, T} = Clause(bmask(BitStr{N, T}, 1:N), b)
@@ -9,6 +12,19 @@ Base.show(io::IO, c::Clause{N, T}) where{N, T} = print(io, "Clause{$N, $(count_o
 booleans(n::Int) = [Clause(bmask(BitStr{n, Int64}, i), bmask(BitStr{n, Int64}, i)) for i=1:n]
 GenericTensorNetworks.:∧(x::Clause, xs::Clause...) = Clause(reduce(|, getfield.(xs, :mask); init=x.mask), reduce(|, getfield.(xs, :val); init=x.val))
 GenericTensorNetworks.:¬(x::Clause) = Clause(x.mask, flip(x.val, x.mask))
+
+struct SubCover{N, T}
+    ids::Set{Int}
+    clause::Clause{N, T}
+end
+
+SubCover(ids::Vector{Int}, clause::Clause) = SubCover(Set(ids), clause)
+
+Base.show(io::IO, sc::SubCover{N, T}) where {N, T} = print(io, "SubCover{$N, $T}: ids: $(sc.ids), mask: $(sc.clause.mask), val: $(sc.clause.val)")
+Base.:(==)(sc1::SubCover{N, T}, sc2::SubCover{N, T}) where {N, T} = (sc1.ids == sc2.ids) && (sc1.clause == sc2.clause)
+Base.in(ids::Set{Int}, subcovers::AbstractVector{SubCover{N, T}}) where {N, T} = any([ids == sc.ids for sc in subcovers])
+Base.in(ids::Vector{Int}, subcovers::AbstractVector{SubCover{N, T}}) where {N, T} = any([Set(ids) == sc.ids for sc in subcovers])
+Base.in(clause::Clause, subcovers::AbstractVector{SubCover{N, T}}) where {N, T} = any([clause == sc.clause for sc in subcovers])
 
 function BitBasis.bdistance(c1::Clause{N, T}, c2::Clause{N, T}) where{N, T}
     b1 = c1.val & c1.mask & c2.mask
