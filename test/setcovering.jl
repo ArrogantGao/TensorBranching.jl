@@ -1,7 +1,7 @@
 using Test, TensorBranching
 
 @testset "contructing all subcovers" begin
-    bs = [rand(BitStr{10, Int64}) for i in 1:20]
+    bs = unique([rand(BitStr{10, Int64}) for i in 1:20])
     scn = subcovers_naive(bs)
     sc = subcovers(bs)
     @test length(scn) == length(sc)
