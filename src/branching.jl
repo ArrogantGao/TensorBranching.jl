@@ -6,7 +6,7 @@ function complexity(sbranches::Vector{Int})
     # solve x, where 1 = sum(x^(-i) for i in sbranches)
     f = x -> sum(x[1]^(-i) for i in sbranches) - 1.0
     sol = nlsolve(f, [1.0])
-    return sol.zero
+    return sol.zero[1]
 end
 
 function complexity(subcovers::AbstractVector{SubCover{N, T}}) where{N, T}

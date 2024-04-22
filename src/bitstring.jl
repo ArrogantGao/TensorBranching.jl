@@ -49,7 +49,7 @@ function covered_by(as::AbstractArray, clause::Clause)
 end
 
 function covered_items(bitstrings, clause::Clause)
-    return [k for (k, b) in enumerate(bitstrings) if covered_by(b, clause)]
+    return [k for (k, b) in enumerate(bitstrings) if any(covered_by(b, clause))]
 end
 
 function flip_all(b::BitStr{N, T}) where{N, T}

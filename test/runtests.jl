@@ -7,6 +7,7 @@ using Test
 end
 
 @testset "setcovering" begin
+    include("clauses.jl")
     include("setcovering.jl")
 end
 

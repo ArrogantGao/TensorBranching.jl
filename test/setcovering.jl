@@ -1,11 +1,8 @@
 using Test, TensorBranching
 
-@testset "contructing all subcovers" begin
-    bs = unique([rand(BitStr{10, Int64}) for i in 1:20])
-    scn = subcovers_naive(bs)
-    sc = subcovers(bs)
-    @test length(scn) == length(sc)
-    for scni in scn
-        @test scni ∈ sc
-    end
+@testset "setcover by JuMP" begin
+    bs = [bit"0000", bit"1000", bit"1010", bit"1110", bit"0001", bit"1001", bit"0101", bit"1101", bit"1011", bit"1111"]
+    scs = subcovers(bs)
+    cov, cx = cover(scs, length(bs))
+    @test isapprox(cx, 1.618, atol = 1e-3)
 end

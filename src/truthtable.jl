@@ -91,3 +91,7 @@ function covered_by(s::StaticBitVector, dnf::DNF)
     @assert length(s.data) == 1 "length of StaticBitVector too long, not yet supported."
     any(c->covered_by(s.data[1], c), dnf.clauses)
 end
+
+function Tbl2BitStrs(tbl::BranchingTable{N}) where N
+    return [BitStr.(x) for x in tbl.table]
+end
