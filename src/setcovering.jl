@@ -5,7 +5,7 @@ function all_clauses_naive(bs::Vector{BitStr{N, T}}) where{N, T}
         cbs = bs[masks]
         if length(cbs) > 0
             ccbs = clause(cbs)
-            if !(ccbs in allclauses)
+            if !(ccbs in allclauses) && (ccbs.mask != 0)
                 push!(allclauses, ccbs)
             end
         end
@@ -42,15 +42,17 @@ function subcovers(bs::Vector{BitStr{N, T}}) where{N, T}
             end
         end
         for c in temp_clauses
-            ids = Vector{Int}()
-            for (j, b) in enumerate(bs)
-                if covered_by(b, c)
-                    push!(ids, j)
+            if c.mask != 0
+                ids = Vector{Int}()
+                for (j, b) in enumerate(bs)
+                    if covered_by(b, c)
+                        push!(ids, j)
+                    end
                 end
-            end
-            j = length(ids)
-            if ids ∉ allcovers[j]
-                push!(allcovers[j], SubCover(ids, c))
+                j = length(ids)
+                if ids ∉ allcovers[j]
+                    push!(allcovers[j], SubCover(ids, c))
+                end
             end
         end
     end
