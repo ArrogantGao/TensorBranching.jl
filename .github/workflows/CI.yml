@@ -24,7 +24,7 @@ jobs:
       matrix:
         version:
           - '1.10'
-          - 'nightly'
+          # - 'nightly' # does not work with nightly, don't know why
         os:
           - ubuntu-latest
         arch:

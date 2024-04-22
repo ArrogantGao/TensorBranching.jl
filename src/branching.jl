@@ -8,3 +8,7 @@ function complexity(sbranches::Vector{Int})
     sol = nlsolve(f, [1.0])
     return sol.zero
 end
+
+function complexity(subcovers::AbstractVector{SubCover{N, T}}) where{N, T}
+    return complexity(sbranches([sc.clause for sc in subcovers]))
+end
