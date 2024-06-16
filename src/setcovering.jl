@@ -67,3 +67,9 @@ function random_pick(xs::Vector{TF}, sub_covers::AbstractVector{SubCover{N, T}},
 
     return [sub_covers[i] for i in picked]
 end
+
+function setcover_strategy(tbl::BranchingTable{N, C}; max_itr::Int = 2) where{N, C}
+    sub_covers = subcovers(tbl)
+    cov, cx = cover(sub_covers, max_itr=max_itr)
+    return DNF([c.clause for c in cov])
+end

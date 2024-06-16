@@ -1,10 +1,17 @@
-function missolve(g::SimpleGraph)
+abstract type BranchingStrategy end
+struct NaiveBranching <: BranchingStrategy end
+struct SetCoverBranching <: BranchingStrategy 
+    max_itr::Int
+    SetCoverBranching() = new(2)
+end
+
+function missolve(g::SimpleGraph; strategy::BranchingStrategy = NaiveBranching())
     if nv(g) == 0
         return 0
     elseif nv(g) == 1
         return 1
     end
-    vertices, openvertices, dnf = optimal_branching_dnf(g)
+    vertices, openvertices, dnf = optimal_branching_dnf(g, strategy = strategy)
     @assert !isempty(vertices)
     return maximum(dnf.clauses) do clause
         removed_vertices = Int[]
@@ -23,7 +30,7 @@ function missolve(g::SimpleGraph)
     end
 end
 
-function optimal_branching_dnf(g::SimpleGraph)
+function optimal_branching_dnf(g::SimpleGraph; strategy::BranchingStrategy = NaiveBranching())
     # vertices up to second nearest neighbors
     v = rand(vertices(g))
     nn = neighbors(g, v)
@@ -31,7 +38,11 @@ function optimal_branching_dnf(g::SimpleGraph)
     openvertices = [v for v in nnn if !all(u -> u ∈ nnn, neighbors(g, v))]
     subg, vmap = induced_subgraph(g, nnn)
     tbl = reduced_alpha_configs(subg, Int[findfirst(==(v), nnn) for v in openvertices])
-    return nnn, openvertices, naive_strategy(tbl)
+    if strategy isa NaiveBranching
+        return nnn, openvertices, naive_strategy(tbl)
+    elseif strategy isa SetCoverBranching
+        return nnn, openvertices, setcover_strategy(tbl, max_itr = strategy.max_itr)
+    end
 end
 
 function naive_strategy(tbl::BranchingTable{N}) where N

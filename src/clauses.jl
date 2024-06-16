@@ -101,3 +101,7 @@ function subcovers(bss::AbstractVector{Vector{BitStr{N, T}}}) where{N, T}
 
     return vcat(allcovers...)
 end
+
+function subcovers(tbl::BranchingTable{N, C}) where{N, C}
+    return subcovers(Tbl2BitStrs(tbl))
+end
