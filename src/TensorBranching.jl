@@ -10,7 +10,6 @@ using Reexport
 export Clause, clause, clauses, SubCover, Tbl2BitStrs
 export subcovers, subcovers_naive, all_clauses_naive
 export LP_setcover, random_pick, cover
-export bithclust, clustering, gather, gather2
 export sbranches, complexity
 export graph_from_tuples, reduced_alpha, reduced_alpha_configs, collect_configs, BranchingTable, DNF, booleans, covered_by
 export missolve
@@ -18,7 +17,6 @@ export missolve
 
 include("bitstring.jl")
 include("clauses.jl")
-include("clustering.jl")
 include("setcovering.jl")
 include("branching.jl")
 include("truthtable.jl")

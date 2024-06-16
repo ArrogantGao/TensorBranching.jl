@@ -68,3 +68,11 @@ end
 function clauses(clustered_bs)
     return [clause(bitstrings) for bitstrings in clustered_bs]
 end
+
+function gather2(c1::Clause{N, T}, c2::Clause{N, T}) where {N, T}
+    b1 = c1.val & c1.mask
+    b2 = c2.val & c2.mask
+    mask = (b1 ⊻ flip_all(b2)) & c1.mask & c2.mask
+    val = b1 & mask
+    return Clause(mask, val)
+end

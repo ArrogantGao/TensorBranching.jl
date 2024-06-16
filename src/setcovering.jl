@@ -6,7 +6,7 @@ function max_id(sub_covers::AbstractVector{SubCover{N, T}}) where{N, T}
     return m0
 end
 
-function cover(sub_covers::AbstractVector{SubCover{N, T}}; max_itr::Int = 10, min_complexity::TF = 1.0) where{N, T, TF}
+function cover(sub_covers::AbstractVector{SubCover{N, T}}; max_itr::Int = 2, min_complexity::TF = 1.0) where{N, T, TF}
     n = max_id(sub_covers)
     γp = n^(1/N)
     scs_new = copy(sub_covers)
