@@ -6,7 +6,7 @@ function max_id(sub_covers::AbstractVector{SubCover{N, T}}) where{N, T}
     return m0
 end
 
-function cover(sub_covers::AbstractVector{SubCover{N, T}}; max_itr::Int = 2, min_complexity::TF = 1.0) where{N, T, TF}
+function cover(sub_covers::AbstractVector{SubCover{N, T}}; max_itr::Int = 1, min_complexity::TF = 1.0) where{N, T, TF}
     n = max_id(sub_covers)
     γp = n^(1/N)
     scs_new = copy(sub_covers)
@@ -68,7 +68,7 @@ function random_pick(xs::Vector{TF}, sub_covers::AbstractVector{SubCover{N, T}},
     return [sub_covers[i] for i in picked]
 end
 
-function setcover_strategy(tbl::BranchingTable{N, C}; max_itr::Int = 2) where{N, C}
+function setcover_strategy(tbl::BranchingTable{N, C}; max_itr::Int = 1) where{N, C}
     sub_covers = subcovers(tbl)
     cov, cx = cover(sub_covers, max_itr=max_itr)
     return DNF([c.clause for c in cov])
