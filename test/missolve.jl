@@ -31,3 +31,13 @@ end
     @test missolve(g) == mis1(EliminateGraph(g))
     @test missolve(g, strategy=SetCoverBranching()) == mis1(EliminateGraph(g))
 end
+
+@testset "missolve with count" begin
+    g = graph_from_tuples(4, [(1, 2), (1, 3), (1, 4)])
+    @test missolve(g, show_count=true) == (3, 1)
+    @test missolve(g, show_count=true, strategy=SetCoverBranching()) == (3, 1)
+
+    g = smallgraph(:tutte)
+    @test missolve(g, show_count=true)[1] == mis1(EliminateGraph(g))
+    @test missolve(g, show_count=true, strategy=SetCoverBranching())[1] == mis1(EliminateGraph(g))
+end
