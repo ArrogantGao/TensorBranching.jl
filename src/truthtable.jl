@@ -8,13 +8,13 @@ end
 
 # Let us create a function for finding reduced ``\alpha``-tensors."
 function reduced_alpha(g::SimpleGraph, openvertices::Vector{Int})
-	problem = GenericTensorNetwork(IndependentSet(g); openvertices)
+	problem = GenericTensorNetwork(IndependentSet(g); openvertices, optimizer = GreedyMethod(nrepeat=1))
 	alpha_tensor = solve(problem, SizeMax())
 	return mis_compactify!(alpha_tensor)
 end
 
 function _reduced_alpha_configs(g::SimpleGraph, openvertices::Vector{Int})
-	problem = GenericTensorNetwork(IndependentSet(g); openvertices)
+	problem = GenericTensorNetwork(IndependentSet(g); openvertices, optimizer = GreedyMethod(nrepeat=1))
 	alpha_tensor = solve(problem, SizeMax())
 	alpha_configs = solve(problem, ConfigsMax(; bounded=false))
 	reduced_alpha_tensor = mis_compactify!(alpha_tensor)

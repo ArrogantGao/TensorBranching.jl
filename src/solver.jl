@@ -12,9 +12,12 @@ function missolve(g::SimpleGraph; show_count::Bool = false, strategy::BranchingS
     end
     vertices, openvertices, dnf = optimal_branching_dnf(g, strategy = strategy, kneighbor = kneighbor)
     @assert !isempty(vertices)
-    branch_count = 0
-    max_mis = 0
-    for clause in dnf.clauses
+
+    branch_count = zeros(Int, length(dnf.clauses))
+    branch_mis = zeros(Int, length(dnf.clauses))
+    
+    @threads for i in 1:length(dnf.clauses)
+        clause = dnf.clauses[i]
         removed_vertices = Int[]
         for (k, v) in enumerate(vertices)
             if readbit(clause.mask, k) == 1
@@ -29,13 +32,15 @@ function missolve(g::SimpleGraph; show_count::Bool = false, strategy::BranchingS
         @assert !isempty(removed_vertices)
         if show_count
             mis, count = missolve(gi, show_count = true)
-            branch_count += count
+            branch_count[i] += count
         else
             mis = missolve(gi)
         end
-        max_mis = max(mis + count_ones(clause.val), max_mis)
+        branch_mis[i] = mis + count_ones(clause.val)
     end
-    return show_count ? (max_mis, branch_count) : max_mis
+    max_mis = maximum(branch_mis)
+
+    return show_count ? (max_mis, sum(branch_count)) : max_mis
 end
 
 function neighbor_cover(g::SimpleGraph, v::Int, k::Int)

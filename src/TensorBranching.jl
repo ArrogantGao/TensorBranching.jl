@@ -1,9 +1,10 @@
 module TensorBranching
 
 using Clustering, NLsolve, JuMP, HiGHS
-using GenericTensorNetworks, GenericTensorNetworks.Graphs
+using GenericTensorNetworks, GenericTensorNetworks.Graphs, TropicalGEMM
 import EliminateGraphs
 
+using Base.Threads
 using Reexport
 @reexport using BitBasis
 
