@@ -1,4 +1,5 @@
 using Test, TensorBranching, TensorBranching.Graphs, GenericTensorNetworks
+using TensorBranching: neighbor_cover
 
 @testset "graphs from tuple" begin
     @testset "graph_from_tuples" begin
@@ -6,6 +7,16 @@ using Test, TensorBranching, TensorBranching.Graphs, GenericTensorNetworks
         @test nv(g) == 4
         @test ne(g) == 3
     end
+end
+
+@testset "neighbor cover" begin
+    g = smallgraph(:petersen)
+    @test length(neighbor_cover(g, 1, 0)[1]) == 1
+    @test length(neighbor_cover(g, 1, 0)[2]) == 1
+    @test length(neighbor_cover(g, 1, 1)[1]) == 4
+    @test length(neighbor_cover(g, 1, 1)[2]) == 3
+    @test length(neighbor_cover(g, 1, 2)[1]) == 10
+    @test length(neighbor_cover(g, 1, 2)[2]) == 0
 end
 
 @testset "reduced alpha" begin

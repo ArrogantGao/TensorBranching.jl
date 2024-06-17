@@ -6,11 +6,11 @@ struct SetCoverBranching <: BranchingStrategy
     SetCoverBranching(max_itr::Int) = new(max_itr)
 end
 
-function missolve(g::SimpleGraph; show_count::Bool = false, strategy::BranchingStrategy = NaiveBranching())
+function missolve(g::SimpleGraph; show_count::Bool = false, strategy::BranchingStrategy = NaiveBranching(), kneighbor::Int = 2)
     if nv(g) == 0 || nv(g) == 1
         return show_count ? (nv(g), 1) : nv(g)
     end
-    vertices, openvertices, dnf = optimal_branching_dnf(g, strategy = strategy)
+    vertices, openvertices, dnf = optimal_branching_dnf(g, strategy = strategy, kneighbor = kneighbor)
     @assert !isempty(vertices)
     branch_count = 0
     max_mis = 0
@@ -38,25 +38,31 @@ function missolve(g::SimpleGraph; show_count::Bool = false, strategy::BranchingS
     return show_count ? (max_mis, branch_count) : max_mis
 end
 
-function optimal_branching_dnf(g::SimpleGraph; strategy::BranchingStrategy = NaiveBranching())
-    # vertices up to second nearest neighbors
-    # v = rand(vertices(g))
-    # choose vertex with maximum degree
-    v = argmax(degree(g))
-    nn = neighbors(g, v)
-    nnn = union(nn, [v], [neighbors(g, u) for u in nn]...)
-    openvertices = [v for v in nnn if !all(u -> u ∈ nnn, neighbors(g, v))]
-    subg, vmap = induced_subgraph(g, nnn)
-    tbl = reduced_alpha_configs(subg, Int[findfirst(==(v), nnn) for v in openvertices])
-    if strategy isa NaiveBranching
-        return nnn, openvertices, naive_strategy(tbl)
-    elseif strategy isa SetCoverBranching
-        return nnn, openvertices, setcover_strategy(tbl, max_itr = strategy.max_itr)
+function neighbor_cover(g::SimpleGraph, v::Int, k::Int)
+    @assert k >= 0
+    vertices = [v]
+    for _ = 1:k
+        vertices = union(vertices, (neighbors(g, w) for w in vertices)...)
     end
+    openvertices = [v for v in vertices if !all(x->x ∈ vertices, neighbors(g, v))]
+    return vertices, openvertices
 end
 
-function naive_strategy(tbl::BranchingTable{N}) where N
+function optimal_branching_dnf(g::SimpleGraph; strategy::BranchingStrategy = NaiveBranching(), kneighbor::Int = 2)
+    # choose vertex with maximum degree
+    v = argmax(degree(g))
+    vertices, openvertices = neighbor_cover(g, v, kneighbor)
+    subg, vmap = induced_subgraph(g, vertices)
+    tbl = reduced_alpha_configs(subg, Int[findfirst(==(v), vertices) for v in openvertices])
+    return vertices, openvertices, impl_strategy(tbl, strategy)
+end
+
+function impl_strategy(tbl::BranchingTable{N}, strategy::NaiveBranching) where N
     return DNF([Clause(bmask(BitStr{N, Int}, 1:N), BitStr(first(x))) for x in tbl.table])
+end
+
+function impl_strategy(tbl::BranchingTable{N}, strategy::SetCoverBranching) where N
+    return setcover_strategy(tbl, max_itr = strategy.max_itr)
 end
 
 function BitBasis.BitStr(sv::StaticBitVector)

@@ -7,7 +7,7 @@ using EliminateGraphs: mis1, EliminateGraph
 
     graph = graph_from_tuples(3, [(1, 2), (2, 3), (3, 1)])
     tbl = reduced_alpha_configs(graph, [1, 2])
-    @test TensorBranching.naive_strategy(tbl) == DNF([Clause(bit"111", bit"100")])
+    @test TensorBranching.impl_strategy(tbl, NaiveBranching()) == DNF([Clause(bit"111", bit"100")])
     @test TensorBranching.setcover_strategy(tbl) == DNF([Clause(bit"111", bit"100")])
 end
 
