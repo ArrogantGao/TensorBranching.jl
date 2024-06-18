@@ -61,7 +61,7 @@ end
 function BranchingTable(n::Int, arr::AbstractVector{<:AbstractVector})
     return BranchingTable([StaticBitVector(n, x) for x in arr])
 end
-Base.:(==)(t1::BranchingTable, t2::BranchingTable) = all(x -> x[1] == x[2], zip(t1.table, t2.table))
+Base.:(==)(t1::BranchingTable, t2::BranchingTable) = all(x -> Set(x[1]) == Set(x[2]), zip(t1.table, t2.table))
 function Base.show(io::IO, t::BranchingTable{N}) where N
     println(io, "BranchingTable{N}")
     for (i, row) in enumerate(t.table)

@@ -6,7 +6,7 @@ function max_id(sub_covers::AbstractVector{SubCover{N, T}}) where{N, T}
     return m0
 end
 
-function cover(sub_covers::AbstractVector{SubCover{N, T}}; max_itr::Int = 1, min_complexity::TF = 1.0) where{N, T, TF}
+function cover(sub_covers::AbstractVector{SubCover{N, T}}; max_itr::Int = 2, min_complexity::TF = 1.0) where{N, T, TF}
     n = max_id(sub_covers)
     γp = n^(1/N)
     scs_new = copy(sub_covers)
@@ -14,6 +14,7 @@ function cover(sub_covers::AbstractVector{SubCover{N, T}}; max_itr::Int = 1, min
         xs = LP_setcover(γp, scs_new, n)
         picked = random_pick(xs, sub_covers, n)
         cx = complexity(picked)
+        @debug "Iteration $i: picked_num = $length(picked), complexity = $cx"
         if (cx < min_complexity) || (i == max_itr)
             return picked, cx
         end

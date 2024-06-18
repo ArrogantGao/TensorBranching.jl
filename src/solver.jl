@@ -54,9 +54,23 @@ function neighbor_cover(g::SimpleGraph, v::Int, k::Int)
 end
 
 function optimal_branching_dnf(g::SimpleGraph; strategy::BranchingStrategy = NaiveBranching(), kneighbor::Int = 2)
-    # choose vertex with maximum degree
-    v = argmax(degree(g))
-    vertices, openvertices = neighbor_cover(g, v, kneighbor)
+    # reference: Exaxt Exponential Algorithms by Fomin and Kratsch, chapter 2.3
+    degree_g = degree(g)
+
+    if (0 ∈ degree_g) || (1 ∈ degree_g)
+        v = findfirst(x -> (x==0)||(x==1), degree_g)
+        vertices, openvertices = neighbor_cover(g, v, 1)
+    elseif (2 ∈ degree_g)
+        v = findfirst(x -> (x==2), degree_g)
+        vertices, openvertices = neighbor_cover(g, v, kneighbor)
+    elseif (3 ∈ degree_g)
+        v = findfirst(x -> (x==3), degree_g)
+        vertices, openvertices = neighbor_cover(g, v, kneighbor)
+    else
+        v = argmax(degree_g)
+        vertices, openvertices = neighbor_cover(g, v, kneighbor)
+    end
+
     subg, vmap = induced_subgraph(g, vertices)
     tbl = reduced_alpha_configs(subg, Int[findfirst(==(v), vertices) for v in openvertices])
     return vertices, openvertices, impl_strategy(tbl, strategy)
