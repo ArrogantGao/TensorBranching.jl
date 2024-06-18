@@ -22,9 +22,23 @@ SubCover(ids::Vector{Int}, clause::Clause) = SubCover(Set(ids), clause)
 
 Base.show(io::IO, sc::SubCover{N, T}) where {N, T} = print(io, "SubCover{$N, $T}: ids: $(sc.ids), mask: $(sc.clause.mask), val: $(sc.clause.val)")
 Base.:(==)(sc1::SubCover{N, T}, sc2::SubCover{N, T}) where {N, T} = (sc1.ids == sc2.ids) && (sc1.clause == sc2.clause)
-Base.in(ids::Set{Int}, subcovers::AbstractVector{SubCover{N, T}}) where {N, T} = any([ids == sc.ids for sc in subcovers])
-Base.in(ids::Vector{Int}, subcovers::AbstractVector{SubCover{N, T}}) where {N, T} = any([Set(ids) == sc.ids for sc in subcovers])
-Base.in(clause::Clause, subcovers::AbstractVector{SubCover{N, T}}) where {N, T} = any([clause == sc.clause for sc in subcovers])
+function Base.in(ids::Set{Int}, subcovers::AbstractVector{SubCover{N, T}}) where {N, T}
+    for sc in subcovers
+        if sc.ids == ids
+            return true
+        end
+    end
+    return false
+end
+Base.in(ids::Vector{Int}, subcovers::AbstractVector{SubCover{N, T}}) where {N, T} = Set(ids) ∈ subcovers
+function Base.in(clause::Clause, subcovers::AbstractVector{SubCover{N, T}}) where {N, T}
+    for sc in subcovers
+        if sc.clause == clause
+            return true
+        end
+    end
+    return false
+end
 
 function BitBasis.bdistance(c1::Clause{N, T}, c2::Clause{N, T}) where{N, T}
     b1 = c1.val & c1.mask & c2.mask

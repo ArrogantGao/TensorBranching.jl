@@ -39,67 +39,47 @@ function subcovers_naive(bs::Union{Vector{BitStr{N, T}}, AbstractVector{Vector{B
 end
 
 function subcovers(bs::Vector{BitStr{N, T}}) where{N, T}
-    allcovers = [Vector{SubCover{N, T}}() for i in 1:length(bs)]
-    allcovers[1] = [SubCover([i], Clause(bmask(BitStr{N, T}, 1:length(bs[i])), bs[i])) for i in 1:length(bs)]
-    for i in 2:length(bs) - 1
-        temp_clauses = Vector{Clause{N, T}}()
-        for c in allcovers[i-1]
+    all_clauses = Set{Clause{N, T}}()
+    temp_clauses = [Clause(bmask(BitStr{N, T}, 1:length(bs[i])), bs[i]) for i in 1:length(bs)]
+    while !isempty(temp_clauses)
+        c = pop!(temp_clauses)
+        if !(c in all_clauses)
+            push!(all_clauses, c)
             for b in bs
-                c_new = gather2(c.clause, Clause(bmask(BitStr{N, T}, 1:length(b)), b))
-                if !(c_new in temp_clauses)
+                c_new = gather2(c, Clause(bmask(BitStr{N, T}, 1:length(b)), b))
+                if (c_new != c) && c_new.mask != 0
                     push!(temp_clauses, c_new)
                 end
             end
         end
-        for c in temp_clauses
-            if c.mask != 0
-                ids = covered_items(bs, c)
-                j = length(ids)
-                if ids ∉ allcovers[j]
-                    push!(allcovers[j], SubCover(ids, c))
-                end
-            end
-        end
     end
-    return vcat(allcovers...)
+    allcovers = [SubCover(covered_items(bs, c), c) for c in all_clauses]
+    return allcovers
 end
 
 function subcovers(bss::AbstractVector{Vector{BitStr{N, T}}}) where{N, T}
-    allcovers = [Vector{SubCover{N, T}}() for i in 1:length(bss)]
-    # 1-clauses
-    for i in 1:length(bss)
-        for b in bss[i]
-            push!(allcovers[1], SubCover([i], Clause(bmask(BitStr{N, T}, 1:length(b)), b)))
-        end
-    end
-
-    # 2-clauses and above
-    for i in 2:length(bss) - 1
-        temp_clauses = Vector{Clause{N, T}}()
-        for c in allcovers[i-1]
-            for j in 1:length(bss)
-                if j ∉ c.ids
-                    for b in bss[j]
-                        c_new = gather2(c.clause, Clause(bmask(BitStr{N, T}, 1:length(b)), b))
-                        if !(c_new in temp_clauses)
+    bs = vcat(bss...)
+    all_clauses = Set{Clause{N, T}}()
+    temp_clauses = [Clause(bmask(BitStr{N, T}, 1:length(bs[i])), bs[i]) for i in 1:length(bs)]
+    while !isempty(temp_clauses)
+        c = pop!(temp_clauses)
+        if !(c in all_clauses)
+            push!(all_clauses, c)
+            idc = Set(covered_items(bss, c))
+            for i in 1:length(bss)
+                if i ∉ idc                
+                    for b in bss[i]
+                        c_new = gather2(c, Clause(bmask(BitStr{N, T}, 1:length(b)), b))
+                        if (c_new != c) && c_new.mask != 0
                             push!(temp_clauses, c_new)
                         end
                     end
                 end
             end
         end
-        for c in temp_clauses
-            if c.mask != 0
-                ids = covered_items(bss, c)
-                j = length(ids)
-                if c ∉ allcovers[j]
-                    push!(allcovers[j], SubCover(ids, c))
-                end
-            end
-        end
     end
-
-    return vcat(allcovers...)
+    allcovers = [SubCover(covered_items(bss, c), c) for c in all_clauses]
+    return allcovers
 end
 
 function subcovers(tbl::BranchingTable{N, C}) where{N, C}
