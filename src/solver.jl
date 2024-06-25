@@ -6,15 +6,19 @@ struct SetCoverBranching <: BranchingStrategy
     SetCoverBranching(max_itr::Int) = new(max_itr)
 end
 
-function missolve(g::SimpleGraph; show_count::Bool = false, strategy::BranchingStrategy = NaiveBranching(), kneighbor::Int = 2)
+function missolve(g::SimpleGraph; show_count = false, strategy::BranchingStrategy = NaiveBranching(), kneighbor::Int = 2)
+    mis = mis_solver(g, strategy = strategy, kneighbor = kneighbor)
+    return show_count ? (mis.mis, mis.count) : mis.mis
+end
+
+function mis_solver(g::SimpleGraph; strategy::BranchingStrategy = NaiveBranching(), kneighbor::Int = 2)
     if nv(g) == 0 || nv(g) == 1
-        return show_count ? (nv(g), 1) : nv(g)
+        return CountingMIS(nv(g))
     end
     vertices, openvertices, dnf = optimal_branching_dnf(g, strategy = strategy, kneighbor = kneighbor)
     @assert !isempty(vertices)
 
-    branch_count = zeros(Int, length(dnf.clauses))
-    branch_mis = zeros(Int, length(dnf.clauses))
+    mis_count = Vector{CountingMIS}(undef, length(dnf.clauses))
     
     @threads for i in 1:length(dnf.clauses)
         clause = dnf.clauses[i]
@@ -30,17 +34,11 @@ function missolve(g::SimpleGraph; show_count::Bool = false, strategy::BranchingS
         gi = copy(g)
         rem_vertices!(gi, removed_vertices)
         @assert !isempty(removed_vertices)
-        if show_count
-            mis, count = missolve(gi, show_count = true)
-            branch_count[i] += count
-        else
-            mis = missolve(gi)
-        end
-        branch_mis[i] = mis + count_ones(clause.val)
+        mis_count[i] = mis_solver(gi) + count_ones(clause.val)
     end
-    max_mis = maximum(branch_mis)
+    max_mis = max(mis_count...)
 
-    return show_count ? (max_mis, sum(branch_count)) : max_mis
+    return max_mis
 end
 
 function neighbor_cover(g::SimpleGraph, v::Int, k::Int)
