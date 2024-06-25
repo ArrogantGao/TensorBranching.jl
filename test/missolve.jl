@@ -13,13 +13,13 @@ end
 
 @testset "optimal_branching_dnf" begin
     petersen = smallgraph(:petersen)
-    vertices, openvertices, dnf = optimal_branching_dnf(petersen)
+    vertices, openvertices, dnf = optimal_branching_dnf(petersen, NaiveBranching(), 2)
     @test dnf isa DNF
     @test length(vertices) == 10
     @test length(openvertices) == 0
     @test count_ones(dnf.clauses[1].val) == 4
 
-    vertices, openvertices, dnf = optimal_branching_dnf(petersen, strategy=SetCoverBranching())
+    vertices, openvertices, dnf = optimal_branching_dnf(petersen, SetCoverBranching(), 2)
     @test dnf isa DNF
     @test length(vertices) == 10
     @test length(openvertices) == 0

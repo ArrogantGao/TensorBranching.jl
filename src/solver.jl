@@ -7,15 +7,15 @@ struct SetCoverBranching <: BranchingStrategy
 end
 
 function missolve(g::SimpleGraph; show_count = false, strategy::BranchingStrategy = NaiveBranching(), kneighbor::Int = 2)
-    mis = mis_solver(g, strategy = strategy, kneighbor = kneighbor)
+    mis = mis_solver(g, strategy, kneighbor)
     return show_count ? (mis.mis, mis.count) : mis.mis
 end
 
-function mis_solver(g::SimpleGraph; strategy::BranchingStrategy = NaiveBranching(), kneighbor::Int = 2)
+function mis_solver(g::SimpleGraph, strategy::BranchingStrategy, kneighbor::Int)
     if nv(g) == 0 || nv(g) == 1
         return CountingMIS(nv(g))
     end
-    vertices, openvertices, dnf = optimal_branching_dnf(g, strategy = strategy, kneighbor = kneighbor)
+    vertices, openvertices, dnf = optimal_branching_dnf(g, strategy, kneighbor)
     @assert !isempty(vertices)
 
     mis_count = Vector{CountingMIS}(undef, length(dnf.clauses))
@@ -34,7 +34,7 @@ function mis_solver(g::SimpleGraph; strategy::BranchingStrategy = NaiveBranching
         gi = copy(g)
         rem_vertices!(gi, removed_vertices)
         @assert !isempty(removed_vertices)
-        mis_count[i] = mis_solver(gi) + count_ones(clause.val)
+        mis_count[i] = mis_solver(gi, strategy, kneighbor) + count_ones(clause.val)
     end
     max_mis = max(mis_count...)
 
@@ -51,7 +51,7 @@ function neighbor_cover(g::SimpleGraph, v::Int, k::Int)
     return vertices, openvertices
 end
 
-function optimal_branching_dnf(g::SimpleGraph; strategy::BranchingStrategy = NaiveBranching(), kneighbor::Int = 2)
+function optimal_branching_dnf(g::SimpleGraph, strategy::BranchingStrategy, kneighbor::Int)
     # reference: Exaxt Exponential Algorithms by Fomin and Kratsch, chapter 2.3
     degree_g = degree(g)
 
