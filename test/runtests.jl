@@ -17,3 +17,7 @@ end
 @testset "missolve" begin
     include("missolve.jl")
 end
+
+@testset "artifacts" begin
+    include("artifacts.jl")
+end

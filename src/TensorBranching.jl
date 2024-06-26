@@ -16,6 +16,9 @@ export graph_from_tuples, reduced_alpha, reduced_alpha_configs, collect_configs,
 export BranchingStrategy, NaiveBranching, SetCoverBranching
 export missolve, CountingMIS, branching_tree
 
+export graph_from_artifact
+
+include("artifacts.jl")
 include("counting_mis.jl")
 include("bitstring.jl")
 include("truthtable.jl")
