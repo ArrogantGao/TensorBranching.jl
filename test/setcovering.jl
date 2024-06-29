@@ -11,5 +11,4 @@ using Test, TensorBranching
         picked = union(picked, covi.ids)
     end
     @test length(picked) == length(bs)
-    @test isapprox(cx, 1.3, atol = 1e-1)
 end

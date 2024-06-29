@@ -67,11 +67,6 @@ function optimal_branching_dnf(g::SimpleGraph, strategy::BranchingStrategy, knei
     elseif (2 ∈ degree_g)
         v = findfirst(x -> (x==2), degree_g)
         vertices, openvertices = neighbor_cover(g, v, kneighbor)
-    # elseif (3 ∈ degree_g)
-    #     v = findfirst(x -> (x==3), degree_g)
-    #     vertices, openvertices = neighbor_cover(g, v, kneighbor)
-    # else
-    #     v = argmax(degree_g)
     else
         vs_min = Int[]
         ovs_min = [1:nv(g)...]
