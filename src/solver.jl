@@ -60,18 +60,30 @@ function optimal_branching_dnf(g::SimpleGraph, strategy::BranchingStrategy, knei
     # reference: Exaxt Exponential Algorithms by Fomin and Kratsch, chapter 2.3
     degree_g = degree(g)
 
+    # use minimum boundary instead
     if (0 ∈ degree_g) || (1 ∈ degree_g)
         v = findfirst(x -> (x==0)||(x==1), degree_g)
         vertices, openvertices = neighbor_cover(g, v, 1)
     elseif (2 ∈ degree_g)
         v = findfirst(x -> (x==2), degree_g)
         vertices, openvertices = neighbor_cover(g, v, kneighbor)
-    elseif (3 ∈ degree_g)
-        v = findfirst(x -> (x==3), degree_g)
-        vertices, openvertices = neighbor_cover(g, v, kneighbor)
+    # elseif (3 ∈ degree_g)
+    #     v = findfirst(x -> (x==3), degree_g)
+    #     vertices, openvertices = neighbor_cover(g, v, kneighbor)
+    # else
+    #     v = argmax(degree_g)
     else
-        v = argmax(degree_g)
-        vertices, openvertices = neighbor_cover(g, v, kneighbor)
+        vs_min = Int[]
+        ovs_min = [1:nv(g)...]
+        for v in 1:nv(g)
+            vs, ovs = neighbor_cover(g, v, kneighbor)
+            if length(ovs) < length(ovs_min)
+                vs_min = vs
+                ovs_min = ovs
+            end
+        end
+        vertices = vs_min
+        openvertices = ovs_min
     end
 
     subg, vmap = induced_subgraph(g, vertices)
