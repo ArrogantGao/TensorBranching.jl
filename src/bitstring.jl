@@ -16,11 +16,12 @@ GenericTensorNetworks.:¬(x::Clause) = Clause(x.mask, flip(x.val, x.mask))
 struct SubCover{N, T}
     ids::Set{Int}
     clause::Clause{N, T}
+    n_rm::Int # number of vertices to remove
 end
 
-SubCover(ids::Vector{Int}, clause::Clause) = SubCover(Set(ids), clause)
+SubCover(ids::Vector{Int}, clause::Clause, n_rm::Int) = SubCover(Set(ids), clause, n_rm)
 
-Base.show(io::IO, sc::SubCover{N, T}) where {N, T} = print(io, "SubCover{$N, $T}: ids: $(sc.ids), mask: $(sc.clause.mask), val: $(sc.clause.val)")
+Base.show(io::IO, sc::SubCover{N, T}) where {N, T} = print(io, "SubCover{$N, $T}: ids: $(sc.ids), mask: $(sc.clause.mask), val: $(sc.clause.val), n_rm: $(sc.n_rm)")
 Base.:(==)(sc1::SubCover{N, T}, sc2::SubCover{N, T}) where {N, T} = (sc1.ids == sc2.ids) && (sc1.clause == sc2.clause)
 function Base.in(ids::Set{Int}, subcovers::AbstractVector{SubCover{N, T}}) where {N, T}
     for sc in subcovers

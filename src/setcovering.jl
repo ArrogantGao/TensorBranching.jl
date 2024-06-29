@@ -1,3 +1,18 @@
+function sbranches(clauses::Vector{Clause{N, T}}) where{N, T}
+    return [count_ones(c.mask) for c in clauses]
+end
+
+function complexity(sbranches::Vector{Int})
+    # solve x, where 1 = sum(x^(-i) for i in sbranches)
+    f = x -> sum(x[1]^(-i) for i in sbranches) - 1.0
+    sol = nlsolve(f, [1.0])
+    return sol.zero[1]
+end
+
+function complexity(subcovers::AbstractVector{SubCover{N, T}}) where{N, T}
+    return complexity([sc.n_rm for sc in subcovers])
+end
+
 function max_id(sub_covers::AbstractVector{SubCover{N, T}}) where{N, T}
     m0 = 1
     for sc in sub_covers
@@ -22,7 +37,7 @@ function cover(sub_covers::AbstractVector{SubCover{N, T}}; max_itr::Int = 2, min
 end
 
 function LP_setcover(γp::TF, sub_covers::AbstractVector{SubCover{N, T}}, n::Int) where{N, T, TF}
-    fixeds = [count_ones(sc.clause.mask) for sc in sub_covers]
+    fixeds = [sc.n_rm for sc in sub_covers]
     γs = 1 ./ γp .^ fixeds
     nsc = length(sub_covers)
 
@@ -69,8 +84,8 @@ function random_pick(xs::Vector{TF}, sub_covers::AbstractVector{SubCover{N, T}},
     return [sub_covers[i] for i in picked]
 end
 
-function setcover_strategy(tbl::BranchingTable{N, C}; max_itr::Int = 1) where{N, C}
-    sub_covers = subcovers(tbl)
+function setcover_strategy(tbl::BranchingTable{N, C}, vertices::Vector{Int}, g::SimpleGraph; max_itr::Int = 1) where{N, C}
+    sub_covers = subcovers(tbl, vertices, g)
     cov, cx = cover(sub_covers, max_itr=max_itr)
     return DNF([c.clause for c in cov])
 end

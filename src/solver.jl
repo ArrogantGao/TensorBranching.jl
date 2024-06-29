@@ -11,6 +11,19 @@ function missolve(g::SimpleGraph; show_count = false, strategy::BranchingStrateg
     return show_count ? (mis.mis, mis.count) : mis.mis
 end
 
+function rv(vertices::Vector{Int}, g::SimpleGraph, clause::Clause{N}) where N
+    removed_vertices = Int[]
+    for (k, v) in enumerate(vertices)
+        if readbit(clause.mask, k) == 1
+            push!(removed_vertices, v)
+            if readbit(clause.val, k) == 1
+                append!(removed_vertices, neighbors(g, v))
+            end
+        end
+    end
+    return unique!(removed_vertices)
+end
+
 function mis_solver(g::SimpleGraph, strategy::BranchingStrategy, kneighbor::Int)
     if nv(g) == 0 || nv(g) == 1
         return CountingMIS(nv(g))
@@ -22,15 +35,7 @@ function mis_solver(g::SimpleGraph, strategy::BranchingStrategy, kneighbor::Int)
     
     @threads for i in 1:length(dnf.clauses)
         clause = dnf.clauses[i]
-        removed_vertices = Int[]
-        for (k, v) in enumerate(vertices)
-            if readbit(clause.mask, k) == 1
-                push!(removed_vertices, v)
-                if readbit(clause.val, k) == 1
-                    append!(removed_vertices, neighbors(g, v))
-                end
-            end
-        end
+        removed_vertices = rv(vertices, g, clause)
         gi = copy(g)
         rem_vertices!(gi, removed_vertices)
         @assert !isempty(removed_vertices)
@@ -71,15 +76,15 @@ function optimal_branching_dnf(g::SimpleGraph, strategy::BranchingStrategy, knei
 
     subg, vmap = induced_subgraph(g, vertices)
     tbl = reduced_alpha_configs(subg, Int[findfirst(==(v), vertices) for v in openvertices])
-    return vertices, openvertices, impl_strategy(tbl, strategy)
+    return vertices, openvertices, impl_strategy(tbl, strategy, vertices, g)
 end
 
-function impl_strategy(tbl::BranchingTable{N}, strategy::NaiveBranching) where N
+function impl_strategy(tbl::BranchingTable{N}, strategy::NaiveBranching, vertices, g) where N
     return DNF([Clause(bmask(BitStr{N, Int}, 1:N), BitStr(first(x))) for x in tbl.table])
 end
 
-function impl_strategy(tbl::BranchingTable{N}, strategy::SetCoverBranching) where N
-    return setcover_strategy(tbl, max_itr = strategy.max_itr)
+function impl_strategy(tbl::BranchingTable{N}, strategy::SetCoverBranching, vertices::Vector{Int}, g::SimpleGraph) where N
+    return setcover_strategy(tbl, vertices, g, max_itr = strategy.max_itr)
 end
 
 function BitBasis.BitStr(sv::StaticBitVector)

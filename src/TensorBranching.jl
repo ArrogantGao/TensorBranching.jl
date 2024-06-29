@@ -24,7 +24,6 @@ include("bitstring.jl")
 include("truthtable.jl")
 include("clauses.jl")
 include("setcovering.jl")
-include("branching.jl")
 include("solver.jl")
 include("branching_tree.jl")
 
