@@ -35,7 +35,11 @@ end
 function _branching_tree(g::SimpleGraph, strategy::BranchingStrategy, kneighbor::Int)
     if nv(g) == 0 || nv(g) == 1
         return BranchingNode(g)
+    elseif maximum(degree(g)) ≥ 6
+        v = argmax(degree(g))
+        return BranchingNode(g, children=[_branching_tree(induced_subgraph(g, setdiff(1:nv(g), v ∪ neighbors(g, v)))[1], strategy, kneighbor), _branching_tree(induced_subgraph(g, setdiff(1:nv(g), v))[1], strategy, kneighbor)], removed=[v ∪ neighbors(g, v), [v]])
     end
+    
     vertices, openvertices, dnf = optimal_branching_dnf(g, strategy, kneighbor)
     @assert !isempty(vertices)
     

@@ -25,25 +25,30 @@ function rv(vertices::Vector{Int}, g::SimpleGraph, clause::Clause{N}) where N
 end
 
 function mis_solver(g::SimpleGraph, strategy::BranchingStrategy, kneighbor::Int)
+    dg = degree(g)
     if nv(g) == 0 || nv(g) == 1
         return CountingMIS(nv(g))
-    end
-    vertices, openvertices, dnf = optimal_branching_dnf(g, strategy, kneighbor)
-    @assert !isempty(vertices)
+    elseif maximum(dg) ≥ 6
+        v = argmax(dg)
+        return max(1 + mis_solver(induced_subgraph(g, setdiff(1:nv(g), v ∪ neighbors(g, v)))[1], strategy, kneighbor), mis_solver(induced_subgraph(g, setdiff(1:nv(g), v))[1], strategy, kneighbor))
+    else
+        vertices, openvertices, dnf = optimal_branching_dnf(g, strategy, kneighbor)
+        @assert !isempty(vertices)
 
-    mis_count = Vector{CountingMIS}(undef, length(dnf.clauses))
-    
-    @threads for i in 1:length(dnf.clauses)
-        clause = dnf.clauses[i]
-        removed_vertices = rv(vertices, g, clause)
-        gi = copy(g)
-        rem_vertices!(gi, removed_vertices)
-        @assert !isempty(removed_vertices)
-        mis_count[i] = mis_solver(gi, strategy, kneighbor) + count_ones(clause.val)
-    end
-    max_mis = max(mis_count...)
+        mis_count = Vector{CountingMIS}(undef, length(dnf.clauses))
+        
+        @threads for i in 1:length(dnf.clauses)
+            clause = dnf.clauses[i]
+            removed_vertices = rv(vertices, g, clause)
+            gi = copy(g)
+            rem_vertices!(gi, removed_vertices)
+            @assert !isempty(removed_vertices)
+            mis_count[i] = mis_solver(gi, strategy, kneighbor) + count_ones(clause.val)
+        end
+        max_mis = max(mis_count...)
 
-    return max_mis
+        return max_mis
+    end
 end
 
 function neighbor_cover(g::SimpleGraph, v::Int, k::Int)
