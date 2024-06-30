@@ -83,7 +83,8 @@ function optimal_branching_dnf(g::SimpleGraph, strategy::BranchingStrategy, knei
 
     subg, vmap = induced_subgraph(g, vertices)
     tbl = reduced_alpha_configs(subg, Int[findfirst(==(v), vertices) for v in openvertices])
-    return vertices, openvertices, impl_strategy(tbl, strategy, vertices, g)
+    filtered_tbl = env_filter(tbl, g, vertices, openvertices)
+    return vertices, openvertices, impl_strategy(filtered_tbl, strategy, vertices, g)
 end
 
 function impl_strategy(tbl::BranchingTable{N}, strategy::NaiveBranching, vertices, g) where N

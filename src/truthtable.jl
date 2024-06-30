@@ -95,3 +95,46 @@ end
 function Tbl2BitStrs(tbl::BranchingTable{N}) where N
     return [BitStr.(x) for x in tbl.table]
 end
+
+# vs a subgraph, return N(vs)
+function Graphs.neighbors(g::SimpleGraph, vs::Vector{Int})
+    set_vs = Set(vs)
+    set_neighbors = Set{Int}()
+    for v in vs
+        neighbors_v = neighbors(g, v)
+        for n in neighbors_v
+            if n ∉ set_vs
+                push!(set_neighbors, n)
+            end
+        end
+    end
+    return set_neighbors
+end
+
+# further simplify the truth table of mis
+function env_filter(tbl::BranchingTable{N, C}, g::SimpleGraph, vertices::Vector{Int}, openvertices::Vector{Int}) where {N, C}
+    tbl_list = vcat([BitStr.(x) for x in tbl.table]...)
+    mis_S = maximum(count_ones.(tbl_list))
+
+    ns = neighbors(g, vertices)
+    so = Set(openvertices)
+
+    new_table = Vector{Vector{StaticBitVector{N, C}}}()
+    for row in tbl.table
+        x = row[1]
+        s1 = Int[]
+        for i in 1:length(x)
+            if (x[i] == 1) && (vertices[i] ∈ so)
+                push!(s1, vertices[i])
+            end
+        end
+        ns1 = neighbors(g, s1)
+        ns0 = ns ∩ ns1
+
+        if length(ns) - length(ns0) + count_ones(BitStr(x)) ≥ mis_S
+            push!(new_table, row)
+        end
+    end
+
+    return BranchingTable(new_table)
+end
