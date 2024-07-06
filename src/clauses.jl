@@ -40,7 +40,7 @@ function subcovers_naive(bs::Union{Vector{BitStr{N, T}}, AbstractVector{Vector{B
     return allcovers
 end
 
-function subcovers(bs::Vector{BitStr{N, T}}, vertices::Vector{Int}, g::SimpleGraph) where{N, T}
+function subcovers(bs::Vector{BitStr{N, T}}, vertices::Vector{Int}, g::SimpleGraph, use_rv::Bool) where{N, T}
     all_clauses = Set{Clause{N, T}}()
     temp_clauses = [Clause(bmask(BitStr{N, T}, 1:length(bs[i])), bs[i]) for i in 1:length(bs)]
     while !isempty(temp_clauses)
@@ -55,12 +55,17 @@ function subcovers(bs::Vector{BitStr{N, T}}, vertices::Vector{Int}, g::SimpleGra
             end
         end
     end
-    allcovers = [SubCover(covered_items(bs, c), c, length(rv(vertices, g, c))) for c in all_clauses]
-    # allcovers = [SubCover(covered_items(bs, c), c, count_ones(c.mask)) for c in all_clauses]
+
+    if use_rv
+        allcovers = [SubCover(covered_items(bss, c), c, length(rv(vertices, g, c))) for c in all_clauses]
+    else
+        allcovers = [SubCover(covered_items(bss, c), c, count_ones(c.mask)) for c in all_clauses]
+    end
+
     return allcovers
 end
 
-function subcovers(bss::AbstractVector{Vector{BitStr{N, T}}}, vertices::Vector{Int}, g::SimpleGraph) where{N, T}
+function subcovers(bss::AbstractVector{Vector{BitStr{N, T}}}, vertices::Vector{Int}, g::SimpleGraph, use_rv::Bool) where{N, T}
     bs = vcat(bss...)
     all_clauses = Set{Clause{N, T}}()
     temp_clauses = [Clause(bmask(BitStr{N, T}, 1:length(bs[i])), bs[i]) for i in 1:length(bs)]
@@ -81,11 +86,16 @@ function subcovers(bss::AbstractVector{Vector{BitStr{N, T}}}, vertices::Vector{I
             end
         end
     end
-    allcovers = [SubCover(covered_items(bss, c), c, length(rv(vertices, g, c))) for c in all_clauses]
-    # allcovers = [SubCover(covered_items(bss, c), c, count_ones(c.mask)) for c in all_clauses]
+
+    if use_rv
+        allcovers = [SubCover(covered_items(bss, c), c, length(rv(vertices, g, c))) for c in all_clauses]
+    else
+        allcovers = [SubCover(covered_items(bss, c), c, count_ones(c.mask)) for c in all_clauses]
+    end
+
     return allcovers
 end
 
-function subcovers(tbl::BranchingTable{N, C}, vertices::Vector{Int}, g::SimpleGraph) where{N, C}
-    return subcovers(Tbl2BitStrs(tbl), vertices, g)
+function subcovers(tbl::BranchingTable{N, C}, vertices::Vector{Int}, g::SimpleGraph, use_rv::Bool) where{N, C}
+    return subcovers(Tbl2BitStrs(tbl), vertices, g, use_rv)
 end

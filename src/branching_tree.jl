@@ -26,21 +26,25 @@ function add_removed!(node::BranchingNode, removed::Vector{Int})
     return node
 end
 
-function branching_tree(g::SimpleGraph, strategy::BranchingStrategy, kneighbor::Int)
-    tree = _branching_tree(g, strategy, kneighbor)
+function branching_tree(g::SimpleGraph, strategy::BranchingStrategy, kneighbor::Int, use_rv::Bool)
+    tree = _branching_tree(g, strategy, kneighbor, use_rv)
     branch_num = length(collect(Leaves(tree)))
     return tree, branch_num
 end
 
-function _branching_tree(g::SimpleGraph, strategy::BranchingStrategy, kneighbor::Int)
+function _branching_tree(g::SimpleGraph, strategy::BranchingStrategy, kneighbor::Int, use_rv::Bool)
+    dg = degree(g)
     if nv(g) == 0 || nv(g) == 1
         return BranchingNode(g)
+    elseif (0 ∈ dg) || (1 ∈ dg)
+        v = findfirst(x -> (x==0)||(x==1), dg)
+        return BranchingNode(g, children=[_branching_tree(induced_subgraph(g, setdiff(1:nv(g), v ∪ neighbors(g, v)))[1], strategy, kneighbor, use_rv)])
     elseif maximum(degree(g)) ≥ 6
         v = argmax(degree(g))
-        return BranchingNode(g, children=[_branching_tree(induced_subgraph(g, setdiff(1:nv(g), v ∪ neighbors(g, v)))[1], strategy, kneighbor), _branching_tree(induced_subgraph(g, setdiff(1:nv(g), v))[1], strategy, kneighbor)], removed=[v ∪ neighbors(g, v), [v]])
+        return BranchingNode(g, children=[_branching_tree(induced_subgraph(g, setdiff(1:nv(g), v ∪ neighbors(g, v)))[1], strategy, kneighbor, use_rv), _branching_tree(induced_subgraph(g, setdiff(1:nv(g), v))[1], strategy, kneighbor, use_rv)], removed=[v ∪ neighbors(g, v), [v]])
     end
     
-    vertices, openvertices, dnf = optimal_branching_dnf(g, strategy, kneighbor)
+    vertices, openvertices, dnf = optimal_branching_dnf(g, strategy, kneighbor, use_rv)
     @assert !isempty(vertices)
     
     root = BranchingNode(g)
@@ -59,7 +63,7 @@ function _branching_tree(g::SimpleGraph, strategy::BranchingStrategy, kneighbor:
         rem_vertices!(gi, removed_vertices)
         @assert !isempty(removed_vertices)
         add_removed!(root, unique(removed_vertices))
-        add_child!(root, _branching_tree(gi, strategy, kneighbor))
+        add_child!(root, _branching_tree(gi, strategy, kneighbor, use_rv))
     end
 
     return root

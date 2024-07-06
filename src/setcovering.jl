@@ -21,9 +21,18 @@ function max_id(sub_covers::AbstractVector{SubCover{N, T}}) where{N, T}
     return m0
 end
 
-function cover(sub_covers::AbstractVector{SubCover{N, T}}; max_itr::Int = 2, min_complexity::TF = 1.0) where{N, T, TF}
+function γ0(sub_covers::AbstractVector{SubCover{N, T}}) where{N, T}
     n = max_id(sub_covers)
-    γp = n^(1/N)
+    max_rvs = Int[]
+    for i in 1:n
+        rvs = [sc.n_rm for sc in sub_covers if sc.ids == Set([i])]
+        push!(max_rvs, maximum(rvs))
+    end
+    return complexity(max_rvs), n
+end
+
+function cover(sub_covers::AbstractVector{SubCover{N, T}}; max_itr::Int = 2, min_complexity::TF = 1.0) where{N, T, TF}
+    γp, n = γ0(sub_covers)
     scs_new = copy(sub_covers)
     for i =1:max_itr
         xs = LP_setcover(γp, scs_new, n)
@@ -84,8 +93,8 @@ function random_pick(xs::Vector{TF}, sub_covers::AbstractVector{SubCover{N, T}},
     return [sub_covers[i] for i in picked]
 end
 
-function setcover_strategy(tbl::BranchingTable{N, C}, vertices::Vector{Int}, g::SimpleGraph; max_itr::Int = 1) where{N, C}
-    sub_covers = subcovers(tbl, vertices, g)
+function setcover_strategy(tbl::BranchingTable{N, C}, vertices::Vector{Int}, g::SimpleGraph, use_rv::Bool; max_itr::Int = 1) where{N, C}
+    sub_covers = subcovers(tbl, vertices, g, use_rv)
     cov, cx = cover(sub_covers, max_itr=max_itr)
     return DNF([c.clause for c in cov])
 end
