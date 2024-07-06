@@ -32,10 +32,10 @@ function γ0(sub_covers::AbstractVector{SubCover{N, T}}) where{N, T}
 end
 
 function cover(sub_covers::AbstractVector{SubCover{N, T}}; max_itr::Int = 2, min_complexity::TF = 1.0) where{N, T, TF}
-    γp, n = γ0(sub_covers)
+    cx, n = γ0(sub_covers)
     scs_new = copy(sub_covers)
     for i =1:max_itr
-        xs = LP_setcover(γp, scs_new, n)
+        xs = LP_setcover(cx, scs_new, n)
         picked = random_pick(xs, sub_covers, n)
         cx = complexity(picked)
         @debug "Iteration $i: picked_num = $length(picked), complexity = $cx"

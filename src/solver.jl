@@ -2,7 +2,7 @@ abstract type BranchingStrategy end
 struct NaiveBranching <: BranchingStrategy end
 struct SetCoverBranching <: BranchingStrategy 
     max_itr::Int
-    SetCoverBranching() = new(1)
+    SetCoverBranching() = new(2)
     SetCoverBranching(max_itr::Int) = new(max_itr)
 end
 
