@@ -28,13 +28,18 @@ function all_clauses_naive(bss::AbstractVector{Vector{BitStr{N, T}}}) where{N, T
     return allclauses
 end
 
-function subcovers_naive(bs::Union{Vector{BitStr{N, T}}, AbstractVector{Vector{BitStr{N, T}}}}, vertices::Vector{Int}, g::SimpleGraph) where{N, T}
+function subcovers_naive(bs::Union{Vector{BitStr{N, T}}, AbstractVector{Vector{BitStr{N, T}}}}, vertices::Vector{Int}, g::SimpleGraph, use_rv::Bool) where{N, T}
     allclauses = all_clauses_naive(bs)
     allcovers = Vector{SubCover{N, T}}()
     for (i, c) in enumerate(allclauses)
         ids = covered_items(bs, c)
-        n_rm = length(rv(vertices, g, c))
-        # n_rm = count_ones(c.mask)
+
+        if use_rv
+            n_rm = length(rv(vertices, g, c))
+        else
+            n_rm = count_ones(c.mask)
+        end
+
         push!(allcovers, SubCover(ids, c, n_rm))
     end
     return allcovers
@@ -57,9 +62,9 @@ function subcovers(bs::Vector{BitStr{N, T}}, vertices::Vector{Int}, g::SimpleGra
     end
 
     if use_rv
-        allcovers = [SubCover(covered_items(bss, c), c, length(rv(vertices, g, c))) for c in all_clauses]
+        allcovers = [SubCover(covered_items(bs, c), c, length(rv(vertices, g, c))) for c in all_clauses]
     else
-        allcovers = [SubCover(covered_items(bss, c), c, count_ones(c.mask)) for c in all_clauses]
+        allcovers = [SubCover(covered_items(bs, c), c, count_ones(c.mask)) for c in all_clauses]
     end
 
     return allcovers

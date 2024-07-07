@@ -4,11 +4,13 @@ using Test, TensorBranching
     bs = unique([rand(BitStr{10, Int64}) for i in 1:20])
     g = random_regular_graph(10, 3)
     v = [1:10...]
-    scn = subcovers_naive(bs, v, g)
-    sc = subcovers(bs, v, g)
-    @test length(scn) == length(sc)
-    for scni in scn
-        @test scni ∈ sc
+    for use_rv in [true, false]
+        scn = subcovers_naive(bs, v, g, use_rv)
+        sc = subcovers(bs, v, g, use_rv)
+        @test length(scn) == length(sc)
+        for scni in scn
+            @test scni ∈ sc
+        end
     end
 end
 
@@ -17,10 +19,12 @@ end
     vertices = [1, 2, 3, 4, 5]
     tbl = reduced_alpha_configs(graph_sat, [1, 4, 5])
     bss = Tbl2BitStrs(tbl)
-    scn = subcovers_naive(bss, vertices, graph_sat)
-    sc = subcovers(bss, vertices, graph_sat)
-    @test length(scn) == length(sc)
-    for scni in scn
-        @test scni ∈ sc
+    for use_rv in [true, false]
+        scn = subcovers_naive(bss, vertices, graph_sat, use_rv)
+        sc = subcovers(bss, vertices, graph_sat, use_rv)
+        @test length(scn) == length(sc)
+        for scni in scn
+            @test scni ∈ sc
+        end
     end
 end
