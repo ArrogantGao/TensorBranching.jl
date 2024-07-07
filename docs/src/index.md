@@ -2,9 +2,9 @@
 CurrentModule = TensorBranching
 ```
 
-# TensorBranching
+# TensorBranching.jl
 
-Documentation for [TensorBranching](https://github.com/ArrogantGao/TensorBranching.jl).
+Documentation for [TensorBranching.jl](https://github.com/ArrogantGao/TensorBranching.jl).
 
 ## Quick start
 
@@ -97,8 +97,6 @@ julia> tree.removed
  [1, 5, 12, 16]
 ```
 the vertices to be removed correspond to the children of the current node.
-
-## Detailed documentation
 
 ```@index
 ```
