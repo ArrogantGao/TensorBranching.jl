@@ -1,11 +1,46 @@
 abstract type BranchingStrategy end
+
+"""
+    struct NaiveBranching <: BranchingStrategy
+A struct representing the NaiveBranching branching strategy.
+"""
 struct NaiveBranching <: BranchingStrategy end
+
+"""
+    struct SetCoverBranching <: BranchingStrategy
+
+A struct representing a branching strategy for set cover problems.
+
+# Fields
+- `max_itr::Int`: The maximum number of iterations.
+
+# Constructors
+- `SetCoverBranching()`: Constructs a `SetCoverBranching` object with a default value of `2` for `max_itr`.
+- `SetCoverBranching(max_itr::Int)`: Constructs a `SetCoverBranching` object with the specified `max_itr` value.
+
+"""
 struct SetCoverBranching <: BranchingStrategy 
     max_itr::Int
     SetCoverBranching() = new(2)
     SetCoverBranching(max_itr::Int) = new(max_itr)
 end
 
+"""
+    missolve(g::SimpleGraph; show_count = false, strategy::BranchingStrategy = NaiveBranching(), kneighbor::Int = 2, use_rv::Bool = true)
+
+Solves the maximum independent set (MIS) problem for a given graph `g` using a specified branching strategy.
+
+## Arguments
+- `g::SimpleGraph`: The input graph.
+- `show_count::Bool = false`: Whether to return the count of iterations performed during the solving process.
+- `strategy::BranchingStrategy = NaiveBranching()`: The branching strategy to use. Defaults to `NaiveBranching()`.
+- `kneighbor::Int = 2`: The number of neighbors to consider during the branching process. Defaults to 2.
+- `use_rv::Bool = true`: Whether to use number of removed vertices during the branching process. Defaults to true.
+
+## Returns
+- If `show_count` is false, returns the maximum independent set (MIS) of the graph `g`.
+- If `show_count` is true, returns a tuple `(mis, count)` where `mis` is the maximum independent set (MIS) of the graph `g` and `count` is the number of iterations performed during the solving process.
+"""
 function missolve(g::SimpleGraph; show_count = false, strategy::BranchingStrategy = NaiveBranching(), kneighbor::Int = 2, use_rv::Bool = true)
     mis = mis_solver(g, strategy, kneighbor, use_rv)
     return show_count ? (mis.mis, mis.count) : mis.mis
@@ -64,6 +99,23 @@ function neighbor_cover(g::SimpleGraph, v::Int, k::Int)
     return vertices, openvertices
 end
 
+"""
+    optimal_branching_dnf(g::SimpleGraph, strategy::BranchingStrategy, kneighbor::Int, use_rv::Bool)
+
+Compute the optimal branching in a directed acyclic graph (DAG) using a specified branching strategy.
+
+# Arguments
+- `g::SimpleGraph`: The input graph.
+- `strategy::BranchingStrategy`: The branching strategy to use.
+- `kneighbor::Int`: The number of neighbors to consider when selecting the branching vertex.
+- `use_rv::Bool`: Whether to use the number of removed vertices during the branching process.
+
+# Returns
+- `vertices`: The set of vertices selected for the optimal branching.
+- `openvertices`: The set of open vertices in the optimal branching.
+- `impl_strategy`: The implementation strategy used for the optimal branching.
+
+"""
 function optimal_branching_dnf(g::SimpleGraph, strategy::BranchingStrategy, kneighbor::Int, use_rv::Bool)
     # reference: Exaxt Exponential Algorithms by Fomin and Kratsch, chapter 2.3
     degree_g = degree(g)

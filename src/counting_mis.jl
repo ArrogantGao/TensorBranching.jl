@@ -15,6 +15,18 @@ Base.:+(x::CountingMIS, y::CountingMIS) = CountingMIS(x.mis + y.mis, x.count + y
 Base.max(x::CountingMIS, y::CountingMIS) = CountingMIS(max(x.mis, y.mis), x.count + y.count)
 Base.max(args...) = reduce(max, args)
 
+"""
+    counting_mis1(eg::EliminateGraph)
+
+Compute the size of the maximum independent set (MIS) in the given `EliminateGraph` and the number of branches by mis1.
+
+# Arguments
+- `eg::EliminateGraph`: The graph to compute the MIS for.
+
+# Returns
+- `CountingMIS`: The size of the maximum independent set.
+
+"""
 function counting_mis1(eg::EliminateGraph)
     N = nv(eg)
     if N == 0
@@ -25,6 +37,18 @@ function counting_mis1(eg::EliminateGraph)
     end
 end
 
+"""
+    counting_mis2(eg::EliminateGraph)
+
+Compute the size of the maximum independent set (MIS) in the given `EliminateGraph` and the number of branches by mis2.
+
+# Arguments
+- `eg::EliminateGraph`: The graph to compute the MIS for.
+
+# Returns
+- `CountingMIS`: The size of the maximum independent set.
+
+"""
 function counting_mis2(eg::EliminateGraph)
     if nv(eg) == 0
         #@show "0" # CHECKED

@@ -109,7 +109,22 @@ function Graphs.neighbors(g::SimpleGraph, vs::Vector{Int})
     return set_neighbors
 end
 
-# further simplify the truth table of mis
+
+"""
+    env_filter(tbl::BranchingTable{N, C}, g::SimpleGraph, vertices::Vector{Int}, openvertices::Vector{Int}) -> BranchingTable
+
+Filter the given `tbl` based on the environment of the vertices.
+
+# Arguments
+- `tbl::BranchingTable{N, C}`: The branching table to filter.
+- `g::SimpleGraph`: The graph representing the environment.
+- `vertices::Vector{Int}`: The vertices to consider.
+- `openvertices::Vector{Int}`: The open vertices.
+
+# Returns
+A new `BranchingTable` object containing the filtered rows.
+
+"""
 function env_filter(tbl::BranchingTable{N, C}, g::SimpleGraph, vertices::Vector{Int}, openvertices::Vector{Int}) where {N, C}
     tbl_list = vcat([BitStr.(x) for x in tbl.table]...)
     mis_S = maximum(count_ones.(tbl_list))

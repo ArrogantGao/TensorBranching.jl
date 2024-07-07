@@ -2,6 +2,20 @@ function sbranches(clauses::Vector{Clause{N, T}}) where{N, T}
     return [count_ones(c.mask) for c in clauses]
 end
 
+"""
+    complexity(sbranches::Vector{Int})
+
+Compute the complexity of a set of branches.
+
+This function solves the equation 1 = sum(x^(-i) for i in sbranches) for x, where `sbranches` is a vector of integers representing the branches.
+
+# Arguments
+- `sbranches::Vector{Int}`: A vector of integers representing the branches.
+
+# Returns
+- `Float64`: The value of x that satisfies the equation.
+
+"""
 function complexity(sbranches::Vector{Int})
     # solve x, where 1 = sum(x^(-i) for i in sbranches)
     f = x -> sum(x[1]^(-i) for i in sbranches) - 1.0
@@ -31,6 +45,21 @@ function γ0(sub_covers::AbstractVector{SubCover{N, T}}) where{N, T}
     return complexity(max_rvs), n
 end
 
+"""
+    cover(sub_covers::AbstractVector{SubCover{N, T}}; max_itr::Int = 2, min_complexity::TF = 1.0) where{N, T, TF}
+
+The `cover` function performs a set covering algorithm on a collection of sub-covers.
+
+## Arguments
+- `sub_covers::AbstractVector{SubCover{N, T}}`: A collection of sub-covers.
+- `max_itr::Int = 2`: The maximum number of iterations to perform.
+- `min_complexity::TF = 1.0`: The minimum complexity threshold.
+
+## Returns
+- `picked`: The selected sub-covers.
+- `cx`: The complexity of the selected sub-covers.
+
+"""
 function cover(sub_covers::AbstractVector{SubCover{N, T}}; max_itr::Int = 2, min_complexity::TF = 1.0) where{N, T, TF}
     cx, n = γ0(sub_covers)
     scs_new = copy(sub_covers)
@@ -93,7 +122,23 @@ function random_pick(xs::Vector{TF}, sub_covers::AbstractVector{SubCover{N, T}},
     return [sub_covers[i] for i in picked]
 end
 
-function setcover_strategy(tbl::BranchingTable{N, C}, vertices::Vector{Int}, g::SimpleGraph, use_rv::Bool; max_itr::Int = 1) where{N, C}
+"""
+    setcover_strategy(tbl::BranchingTable{N, C}, vertices::Vector{Int}, g::SimpleGraph, use_rv::Bool; max_itr::Int = 1) where{N, C}
+
+This function implements a set covering strategy for a given set of vertices in a graph.
+
+# Arguments
+- `tbl::BranchingTable{N, C}`: The branching table.
+- `vertices::Vector{Int}`: The set of vertices to cover.
+- `g::SimpleGraph`: The graph.
+- `use_rv::Bool`: A flag indicating whether to use the number of vertices removed.
+- `max_itr::Int = 2`: The maximum number of iterations.
+
+# Returns
+- `DNF`: The branching strategy.
+
+"""
+function setcover_strategy(tbl::BranchingTable{N, C}, vertices::Vector{Int}, g::SimpleGraph, use_rv::Bool; max_itr::Int = 2) where{N, C}
     sub_covers = subcovers(tbl, vertices, g, use_rv)
     cov, cx = cover(sub_covers, max_itr=max_itr)
     return DNF([c.clause for c in cov])

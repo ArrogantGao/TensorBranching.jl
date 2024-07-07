@@ -28,6 +28,21 @@ function all_clauses_naive(bss::AbstractVector{Vector{BitStr{N, T}}}) where{N, T
     return allclauses
 end
 
+"""
+    subcovers_naive(bs, vertices, g, use_rv)
+
+Compute the subcovers for a given set of bit strings by search all possible clauses.
+
+# Arguments
+- `bs::Union{Vector{BitStr{N, T}}, AbstractVector{Vector{BitStr{N, T}}}}`: The set of bit strings.
+- `vertices::Vector{Int}`: The vertices.
+- `g::SimpleGraph`: The graph.
+- `use_rv::Bool`: A flag indicating whether to use the number of vertices removed.
+
+# Returns
+- `allcovers::Vector{SubCover{N, T}}`: The computed subcovers.
+
+"""
 function subcovers_naive(bs::Union{Vector{BitStr{N, T}}, AbstractVector{Vector{BitStr{N, T}}}}, vertices::Vector{Int}, g::SimpleGraph, use_rv::Bool) where{N, T}
     allclauses = all_clauses_naive(bs)
     allcovers = Vector{SubCover{N, T}}()
@@ -70,6 +85,21 @@ function subcovers(bs::Vector{BitStr{N, T}}, vertices::Vector{Int}, g::SimpleGra
     return allcovers
 end
 
+"""
+    subcovers(bss::AbstractVector{Vector{BitStr{N, T}}}, vertices::Vector{Int}, g::SimpleGraph, use_rv::Bool) where {N, T}
+
+Compute the subcovers of a set of bit strings by iteratively gathering clauses.
+
+# Arguments
+- `bss::AbstractVector{Vector{BitStr{N, T}}}`: A vector of vectors of bit strings.
+- `vertices::Vector{Int}`: A vector of integers representing vertices.
+- `g::SimpleGraph`: A simple graph.
+- `use_rv::Bool`: A boolean indicating whether to use the number of vertices removed.
+
+# Returns
+- `allcovers::Vector{SubCover}`: A vector of `SubCover` objects representing the subcovers.
+
+"""
 function subcovers(bss::AbstractVector{Vector{BitStr{N, T}}}, vertices::Vector{Int}, g::SimpleGraph, use_rv::Bool) where{N, T}
     bs = vcat(bss...)
     all_clauses = Set{Clause{N, T}}()

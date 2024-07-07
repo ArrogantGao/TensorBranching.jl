@@ -2,6 +2,20 @@
 
 using AbstractTrees
 
+"""
+    mutable struct BranchingNode
+
+A mutable struct representing a node in a branching tree.
+
+# Fields
+- `children::Vector{BranchingNode}`: The children nodes of the current node.
+- `graph::SimpleGraph{Int}`: The graph associated with the current node.
+- `removed::Vector{Vector{Int}}`: The removed edges from the graph.
+
+# Constructor
+- `BranchingNode(graph::SimpleGraph{Int}; children::Vector{BranchingNode} = Vector{BranchingNode}(), removed::Vector{Vector{Int}} = Vector{Vector{Int}}())`: Constructs a new `BranchingNode` object.
+
+"""
 mutable struct BranchingNode
     children::Vector{BranchingNode}
     graph::SimpleGraph{Int}
@@ -26,6 +40,23 @@ function add_removed!(node::BranchingNode, removed::Vector{Int})
     return node
 end
 
+"""
+    branching_tree(g::SimpleGraph, strategy::BranchingStrategy, kneighbor::Int, use_rv::Bool)
+
+Constructs a branching tree based on the given graph `g` using the specified `strategy`.
+The `kneighbor` parameter determines the number of neighbors to consider during branching.
+If `use_rv` is `true`, number of vertex removed is used; otherwise, only count the clause.
+
+# Arguments
+- `g::SimpleGraph`: The input graph.
+- `strategy::BranchingStrategy`: The branching strategy to use.
+- `kneighbor::Int`: The number of neighbors to consider during branching.
+- `use_rv::Bool`: Whether to use number of vertex removed.
+
+# Returns
+- `tree`: The constructed branching tree.
+- `branch_num`: The number of branches in the tree.
+"""
 function branching_tree(g::SimpleGraph, strategy::BranchingStrategy, kneighbor::Int, use_rv::Bool)
     tree = _branching_tree(g, strategy, kneighbor, use_rv)
     branch_num = length(collect(Leaves(tree)))
