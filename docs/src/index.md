@@ -102,7 +102,3 @@ the vertices to be removed correspond to the children of the current node.
 
 ```@index
 ```
-
-```@autodocs
-Modules = [TensorBranching]
-```
