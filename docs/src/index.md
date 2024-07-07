@@ -97,6 +97,3 @@ julia> tree.removed
  [1, 5, 12, 16]
 ```
 the vertices to be removed correspond to the children of the current node.
-
-```@index
-```
