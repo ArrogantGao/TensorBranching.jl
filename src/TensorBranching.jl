@@ -1,6 +1,6 @@
 module TensorBranching
 
-using Clustering, NLsolve, JuMP, HiGHS
+using NLsolve, JuMP, HiGHS
 using GenericTensorNetworks
 import EliminateGraphs
 

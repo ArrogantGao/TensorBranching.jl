@@ -40,14 +40,12 @@ A table of branching configurations. The table is a vector of vectors of `Static
 
 ### Examples
 ```jldoctest
-julia> graph_sat = graph_from_tuples(5, [(1, 2), (2,3), (2,4), (1,3), (3, 4), (4, 5), (2,5)])
-{5, 7} undirected simple Int64 graph
+julia> graph_sat = graph_from_tuples(3, [(1, 2), (2, 3), (1, 3)])
+{3, 3} undirected simple Int64 graph
 
-julia> tbl = reduced_alpha_configs(graph_sat, [1, 4, 5])
+julia> tbl = reduced_alpha_configs(graph_sat, [1, 2])
 BranchingTable{N}
-00100, 01000
-10010
-00101
+001
 ```
 
 To cover the branching table, at least one clause in each row must be satisfied.
