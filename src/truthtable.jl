@@ -126,26 +126,38 @@ A new `BranchingTable` object containing the filtered rows.
 
 """
 function env_filter(tbl::BranchingTable{N, C}, g::SimpleGraph, vertices::Vector{Int}, openvertices::Vector{Int}) where {N, C}
-    tbl_list = vcat([BitStr.(x) for x in tbl.table]...)
-    mis_S = maximum(count_ones.(tbl_list))
-
     ns = neighbors(g, vertices)
     so = Set(openvertices)
 
     new_table = Vector{Vector{StaticBitVector{N, C}}}()
-    for row in tbl.table
+
+    open_vertices_1 = [Int[] for i in 1:length(tbl.table)]
+    neibs_0 = Set{Int}[]
+    for i in 1:length(tbl.table)
+        row = tbl.table[i]
         x = row[1]
-        s1 = Int[]
-        for i in 1:length(x)
-            if (x[i] == 1) && (vertices[i] ∈ so)
-                push!(s1, vertices[i])
+        for n in 1:length(x)
+            if (x[n] == 1) && (vertices[n] ∈ so)
+                push!(open_vertices_1[i], vertices[n])
             end
         end
-        ns1 = neighbors(g, s1)
-        ns0 = ns ∩ ns1
+        push!(neibs_0, setdiff(ns, neighbors(g, open_vertices_1[i]) ∩ ns))
+    end
 
-        if length(ns) - length(ns0) + count_ones(BitStr(x)) ≥ mis_S
-            push!(new_table, row)
+    for i in 1:length(tbl.table)
+        flag = true
+        for j in 1:length(tbl.table)
+            if i != j
+                pink_block = setdiff(neibs_0[i], neibs_0[j])
+                sg_pink, sg_vec = induced_subgraph(g, collect(pink_block))
+                if count_ones(BitStr(tbl.table[i][1])) + mis2(EliminateGraph(sg_pink)) ≤ count_ones(BitStr(tbl.table[j][1]))
+                    flag = false
+                    break
+                end
+            end
+        end
+        if flag
+            push!(new_table, tbl.table[i])
         end
     end
 

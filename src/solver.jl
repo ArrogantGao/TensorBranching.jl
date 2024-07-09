@@ -36,13 +36,14 @@ Solves the maximum independent set (MIS) problem for a given graph `g` using a s
 - `strategy::BranchingStrategy = NaiveBranching()`: The branching strategy to use. Defaults to `NaiveBranching()`.
 - `kneighbor::Int = 2`: The number of neighbors to consider during the branching process. Defaults to 2.
 - `use_rv::Bool = true`: Whether to use number of removed vertices during the branching process. Defaults to true.
+- `use_filter::Bool = true`: Whether to use the environment filter. Defaults to true.
 
 ## Returns
 - If `show_count` is false, returns the maximum independent set (MIS) of the graph `g`.
 - If `show_count` is true, returns a tuple `(mis, count)` where `mis` is the maximum independent set (MIS) of the graph `g` and `count` is the number of iterations performed during the solving process.
 """
-function missolve(g::SimpleGraph; show_count = false, strategy::BranchingStrategy = NaiveBranching(), kneighbor::Int = 2, use_rv::Bool = true)
-    mis = mis_solver(g, strategy, kneighbor, use_rv)
+function missolve(g::SimpleGraph; show_count = false, strategy::BranchingStrategy = NaiveBranching(), kneighbor::Int = 2, use_rv::Bool = true, use_filter::Bool = true)
+    mis = mis_solver(g, strategy, kneighbor, use_rv, use_filter)
     return show_count ? (mis.mis, mis.count) : mis.mis
 end
 
@@ -59,18 +60,18 @@ function rv(vertices::Vector{Int}, g::SimpleGraph, clause::Clause{N}) where N
     return unique!(removed_vertices)
 end
 
-function mis_solver(g::SimpleGraph, strategy::BranchingStrategy, kneighbor::Int, use_rv::Bool)
+function mis_solver(g::SimpleGraph, strategy::BranchingStrategy, kneighbor::Int, use_rv::Bool, use_filter::Bool)
     dg = degree(g)
     if nv(g) == 0 || nv(g) == 1
         return CountingMIS(nv(g))
     elseif (0 ∈ dg) || (1 ∈ dg)
         v = findfirst(x -> (x==0)||(x==1), dg)
-        return 1 + mis_solver(induced_subgraph(g, setdiff(1:nv(g), v ∪ neighbors(g, v)))[1], strategy, kneighbor, use_rv)
+        return 1 + mis_solver(induced_subgraph(g, setdiff(1:nv(g), v ∪ neighbors(g, v)))[1], strategy, kneighbor, use_rv, use_filter)
     elseif maximum(dg) ≥ 6
         v = argmax(dg)
-        return max(1 + mis_solver(induced_subgraph(g, setdiff(1:nv(g), v ∪ neighbors(g, v)))[1], strategy, kneighbor, use_rv), mis_solver(induced_subgraph(g, setdiff(1:nv(g), v))[1], strategy, kneighbor, use_rv))
+        return max(1 + mis_solver(induced_subgraph(g, setdiff(1:nv(g), v ∪ neighbors(g, v)))[1], strategy, kneighbor, use_rv, use_filter), mis_solver(induced_subgraph(g, setdiff(1:nv(g), v))[1], strategy, kneighbor, use_rv, use_filter))
     else
-        vertices, openvertices, dnf = optimal_branching_dnf(g, strategy, kneighbor, use_rv)
+        vertices, openvertices, dnf = optimal_branching_dnf(g, strategy, kneighbor, use_rv, use_filter)
         @assert !isempty(vertices)
 
         mis_count = Vector{CountingMIS}(undef, length(dnf.clauses))
@@ -81,7 +82,7 @@ function mis_solver(g::SimpleGraph, strategy::BranchingStrategy, kneighbor::Int,
             gi = copy(g)
             rem_vertices!(gi, removed_vertices)
             @assert !isempty(removed_vertices)
-            mis_count[i] = mis_solver(gi, strategy, kneighbor, use_rv) + count_ones(clause.val)
+            mis_count[i] = mis_solver(gi, strategy, kneighbor, use_rv, use_filter) + count_ones(clause.val)
         end
         max_mis = max(mis_count...)
 
@@ -109,6 +110,7 @@ Compute the optimal branching in a directed acyclic graph (DAG) using a specifie
 - `strategy::BranchingStrategy`: The branching strategy to use.
 - `kneighbor::Int`: The number of neighbors to consider when selecting the branching vertex.
 - `use_rv::Bool`: Whether to use the number of removed vertices during the branching process.
+- `use_filter::Bool`: Whether to use the environment filter.
 
 # Returns
 - `vertices`: The set of vertices selected for the optimal branching.
@@ -116,7 +118,7 @@ Compute the optimal branching in a directed acyclic graph (DAG) using a specifie
 - `impl_strategy`: The implementation strategy used for the optimal branching.
 
 """
-function optimal_branching_dnf(g::SimpleGraph, strategy::BranchingStrategy, kneighbor::Int, use_rv::Bool)
+function optimal_branching_dnf(g::SimpleGraph, strategy::BranchingStrategy, kneighbor::Int, use_rv::Bool, use_filter::Bool)
     # reference: Exaxt Exponential Algorithms by Fomin and Kratsch, chapter 2.3
     degree_g = degree(g)
 
@@ -135,7 +137,11 @@ function optimal_branching_dnf(g::SimpleGraph, strategy::BranchingStrategy, knei
 
     subg, vmap = induced_subgraph(g, vertices)
     tbl = reduced_alpha_configs(subg, Int[findfirst(==(v), vertices) for v in openvertices])
-    filtered_tbl = env_filter(tbl, g, vertices, openvertices)
+    if use_filter
+        filtered_tbl = env_filter(tbl, g, vertices, openvertices)
+    else
+        filtered_tbl = tbl
+    end
     return vertices, openvertices, impl_strategy(filtered_tbl, strategy, vertices, g, use_rv)
 end
 
