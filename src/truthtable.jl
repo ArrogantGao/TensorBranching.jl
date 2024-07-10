@@ -150,7 +150,8 @@ function env_filter(tbl::BranchingTable{N, C}, g::SimpleGraph, vertices::Vector{
             if i != j
                 pink_block = setdiff(neibs_0[i], neibs_0[j])
                 sg_pink, sg_vec = induced_subgraph(g, collect(pink_block))
-                if count_ones(BitStr(tbl.table[i][1])) + mis2(EliminateGraph(sg_pink)) ≤ count_ones(BitStr(tbl.table[j][1]))
+                mis_pink = mis2(EliminateGraph(sg_pink))
+                if (count_ones(BitStr(tbl.table[i][1])) + mis_pink ≤ count_ones(BitStr(tbl.table[j][1]))) && (!iszero(mis_pink))
                     flag = false
                     break
                 end
