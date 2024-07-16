@@ -39,6 +39,8 @@ function counting_mis1(eg::EliminateGraph)
     end
 end
 
+counting_mis1(g::SimpleGraph) = counting_mis1(EliminateGraph(g))
+
 """
     counting_mis2(eg::EliminateGraph)
 
@@ -157,3 +159,5 @@ function counting_mis2(eg::EliminateGraph)
         end
     end
 end
+
+counting_mis2(g::SimpleGraph) = counting_mis2(EliminateGraph(g))
