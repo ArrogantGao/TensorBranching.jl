@@ -1,4 +1,4 @@
-function missolve(g::SimpleGraph; show_count = false, strategy::AbsractBranching = NaiveBranching(), measurement::AbstractMeasurement = NaiveMeasure(), vertex_select::AbstractVertexSelector = MinBoundSelector(), filter::AbstractTruthFilter = EnvFilter())
+function missolve(g::SimpleGraph; show_count = false, strategy::AbsractBranching = NaiveBranching(), measurement::AbstractMeasurement = NaiveMeasure(), vertex_select::AbstractVertexSelector = MinBoundSelector(2), filter::AbstractTruthFilter = EnvFilter())
     mis = mis_solver(g, strategy, measurement, vertex_select, filter)
     return show_count ? (mis.mis, mis.count) : mis.mis
 end

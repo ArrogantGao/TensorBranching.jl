@@ -87,7 +87,7 @@ struct ManulSelector <: AbstractVertexSelector
 end
 
 function select_vertex(g::SimpleGraph, vertex_select::ManulSelector)
-    vertices = vertex_select.vertex_select
+    vertices = vertex_select.vertices
     openvertices = open_vertices(g, vertices)
     return vertices, openvertices
 end
