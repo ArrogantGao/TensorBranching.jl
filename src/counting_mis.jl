@@ -1,6 +1,8 @@
 using EliminateGraphs
 using EliminateGraphs: adjacent45
 
+export counting_mis1, counting_mis2
+
 struct CountingMIS
     mis::Int
     count::Int

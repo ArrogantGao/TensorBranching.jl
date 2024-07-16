@@ -140,3 +140,8 @@ function gather2(c1::Clause{N, T}, c2::Clause{N, T}) where {N, T}
     val = b1 & mask
     return Clause(mask, val)
 end
+
+function BitBasis.BitStr(sv::StaticBitVector)
+    @assert length(sv.data) == 1 "bit string too long!"
+    return BitBasis.BitStr{length(sv), Int}(sv.data[1])
+end
