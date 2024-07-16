@@ -82,11 +82,11 @@ function select_vertex(g::SimpleGraph{Int}, vertex_select::MinBoundSelector)
     return vertices, openvertices
 end
 
-struct ManulSelector <: AbstractVertexSelector
+struct ManualSelector <: AbstractVertexSelector
     vertices::Vector{Int}
 end
 
-function select_vertex(g::SimpleGraph, vertex_select::ManulSelector)
+function select_vertex(g::SimpleGraph, vertex_select::ManualSelector)
     vertices = vertex_select.vertices
     openvertices = open_vertices(g, vertices)
     return vertices, openvertices

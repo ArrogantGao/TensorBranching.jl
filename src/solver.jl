@@ -4,7 +4,6 @@ function missolve(g::SimpleGraph; show_count = false, strategy::AbsractBranching
 end
 
 function mis_solver(g::SimpleGraph, strategy::AbsractBranching, measurement::AbstractMeasurement, vertex_select::AbstractVertexSelector, filter::AbstractTruthFilter)
-
     dg = degree(g)
     if nv(g) == 0 || nv(g) == 1
         return CountingMIS(nv(g))
@@ -23,7 +22,7 @@ function mis_solver(g::SimpleGraph, strategy::AbsractBranching, measurement::Abs
 
         mis_count = Vector{CountingMIS}(undef, length(dnf.clauses))
         
-        for i in 1:length(dnf.clauses)
+        @threads for i in 1:length(dnf.clauses)
             clause = dnf.clauses[i]
             rvs = removed_vertices(vertices, g, clause)
             gi = copy(g)

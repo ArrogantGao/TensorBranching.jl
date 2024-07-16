@@ -16,7 +16,7 @@ export graph_from_tuples, reduced_alpha, reduced_alpha_configs, collect_configs,
 
 export AbsractBranching, NaiveBranching, SetCoverBranching
 export AbstractMeasurement, NaiveMeasure, D3Measure
-export AbstractVertexSelector, MinBoundSelector, ManulSelector
+export AbstractVertexSelector, MinBoundSelector, ManualSelector
 export AbstractTruthFilter, NoFilter, EnvFilter
 
 export missolve, CountingMIS, branching_tree
