@@ -121,5 +121,5 @@ end
 function setcover_strategy(tbl::BranchingTable{N, C}, vertices::Vector{Int}, g::SimpleGraph, max_itr::Int, measurement::AbstractMeasurement) where{N, C}
     sub_covers = subcovers(tbl, vertices, g, measurement)
     cov, cx = cover(sub_covers, max_itr)
-    return DNF{N, Int64}([c.clause for c in cov])
+    return DNF{N, Int64}([c.clause for c in cov]), cx
 end

@@ -10,7 +10,7 @@ A struct representing the NaiveBranching branching strategy.
 struct NaiveBranching <: AbsractBranching end
 
 function impl_strategy(g::SimpleGraph, vertices::Vector{Int}, tbl::BranchingTable{N}, strategy::NaiveBranching, measurement::AbstractMeasurement) where{N}
-    return DNF([Clause(bmask(BitStr{N, Int}, 1:N), BitStr(first(x))) for x in tbl.table])
+    return DNF([Clause(bmask(BitStr{N, Int}, 1:N), BitStr(first(x))) for x in tbl.table]), 0.0
 end
 
 """
