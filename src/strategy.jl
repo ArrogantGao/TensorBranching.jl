@@ -9,8 +9,8 @@ A struct representing the NaiveBranching branching strategy.
 """
 struct NaiveBranching <: AbstractBranching end
 
-function impl_strategy(g::SimpleGraph, vertices::Vector{Int}, tbl::BranchingTable{INT}, ::NaiveBranching, measurement::AbstractMeasure) where INT
-    return Branches([Branch(Clause(bmask(INT, 1:nbits(tbl)), first(x)), vertices, g, measurement) for x in tbl.table])
+function impl_strategy(g::SimpleGraph, vertices::Vector{Int}, tbl::BranchingTable{INT}, ::NaiveBranching, measure::AbstractMeasure) where INT
+    return Branches([Branch(Clause(bmask(INT, 1:nbits(tbl)), first(x)), vertices, g, measure) for x in tbl.table])
 end
 
 """
@@ -32,15 +32,15 @@ struct SetCoverBranching <: AbstractBranching
     SetCoverBranching(max_itr::Int) = new(max_itr)
 end
 
-function impl_strategy(g::SimpleGraph, vertices::Vector{Int}, tbl::BranchingTable{INT}, strategy::SetCoverBranching, measurement::AbstractMeasure) where INT
-    return setcover_strategy(tbl, vertices, g, strategy.max_itr, measurement)
+function impl_strategy(g::SimpleGraph, vertices::Vector{Int}, tbl::BranchingTable{INT}, strategy::SetCoverBranching, measure::AbstractMeasure) where INT
+    return setcover_strategy(tbl, vertices, g, strategy.max_itr, measure)
 end
 
 struct NumOfVertices <: AbstractMeasure end # each vertex is counted as 1
 
 measure(g::SimpleGraph, ::NumOfVertices) = nv(g)
 
-function size_reduced(g::SimpleGraph, vertices::Vector{Int}, clause::Clause{T}, measurement::NumOfVertices) where{T}
+function size_reduced(g::SimpleGraph, vertices::Vector{Int}, clause::Clause{T}, m::NumOfVertices) where{T}
     return length(removed_vertices(vertices, g, clause))
 end
 
@@ -60,8 +60,8 @@ function measure(g::SimpleGraph, ::D3Measure)
     end
 end
 
-function size_reduced(g::SimpleGraph, vertices::Vector{Int}, clause::Clause{T}, measurement::D3Measure) where{T}
-    return measure(g, measurement) - measure(induced_subgraph(g, setdiff(1:nv(g), removed_vertices(vertices, g, clause)))[1], measurement)
+function size_reduced(g::SimpleGraph, vertices::Vector{Int}, clause::Clause{T}, m::D3Measure) where{T}
+    return measure(g, m) - measure(induced_subgraph(g, setdiff(1:nv(g), removed_vertices(vertices, g, clause)))[1], m)
 end
 
 struct MinBoundarySelector <: AbstractVertexSelector
@@ -144,9 +144,9 @@ struct Branch{T}
     mis::Int
 end
 
-function Branch(clause::Clause{INT}, vertices::Vector{Int}, g::SimpleGraph, measurement::AbstractMeasure) where {INT}
+function Branch(clause::Clause{INT}, vertices::Vector{Int}, g::SimpleGraph, measure::AbstractMeasure) where {INT}
     vertices_removed = removed_vertices(vertices, g, clause)
-    sr = size_reduced(g, vertices, clause, measurement)
+    sr = size_reduced(g, vertices, clause, measure)
     return Branch(vertices_removed, sr, count_ones(clause.val))
 end
 

@@ -6,14 +6,14 @@ The configuration for the optimal branching MIS solver.
 # Fields
 - `table_solver::ST`: the MIS solver, e.g., `TensorNetworkSolver()`
 - `branching_strategy::BT`: the branching strategy, e.g., `NaiveBranching()`, `SetCoverBranching()`
-- `measurement::MT`: the measurement for the branching strategy, e.g., `NumOfVertices()`, `D3Measure()`
+- `measure::MT`: the measure for the branching strategy, e.g., `NumOfVertices()`, `D3Measure()`
 - `vertex_selector::VT`: the vertex selector, e.g., `MinBoundarySelector(2)`, `ManualSelector([1, 2, 3])`
 - `table_filter::FT`: the truth filter, e.g., `EnvFilter()`, `NoFilter()`
 """
 Base.@kwdef struct SolverConfig{ST<:AbstractMISSolver, BT<:AbstractBranching, MT<:AbstractMeasure, VT<:AbstractVertexSelector, FT<:AbstractTruthFilter}
     table_solver::ST = TensorNetworkSolver()
     branching_strategy::BT = NaiveBranching()
-    measurement::MT = NumOfVertices()
+    measure::MT = NumOfVertices()
     vertex_selector::VT = MinBoundarySelector(2)
     table_filter::FT = EnvFilter()
 end
@@ -50,7 +50,7 @@ function mis_solver(g::SimpleGraph, config::SolverConfig)
         return max(1 + mis_solver(induced_subgraph(g, setdiff(1:nv(g), v ∪ neighbors(g, v)))[1], config), mis_solver(induced_subgraph(g, setdiff(1:nv(g), v))[1], config))
     else
         vertices = select_vertex(g, config.vertex_selector)
-        branches = optimal_branches(g, vertices, config.branching_strategy; config.measurement, config.table_filter, config.table_solver)
+        branches = optimal_branches(g, vertices, config.branching_strategy; config.measure, config.table_filter, config.table_solver)
 
         mis_count = Vector{CountingMIS}(undef, length(branches.branches))
         
@@ -68,7 +68,7 @@ function mis_solver(g::SimpleGraph, config::SolverConfig)
 end
 
 """
-    optimal_branches(g::SimpleGraph, vertices::AbstractVector, strategy::AbstractBranching; measurement::AbstractMeasure = NumOfVertices(), filter::AbstractTruthFilter = NoFilter())
+    optimal_branches(g::SimpleGraph, vertices::AbstractVector, strategy::AbstractBranching; measure::AbstractMeasure = NumOfVertices(), filter::AbstractTruthFilter = NoFilter())
     
 Find the optimal branches for the given graph and vertices.
 
@@ -78,12 +78,12 @@ Find the optimal branches for the given graph and vertices.
 - `strategy::AbstractBranching`: the branching strategy, e.g., `NaiveBranching()`, `SetCoverBranching()`
 
 # Keyword Arguments
-- `measurement::AbstractMeasure`: the measurement for the branching strategy, e.g., `NumOfVertices()`, `D3Measure()`
+- `measure::AbstractMeasure`: the measure for the branching strategy, e.g., `NumOfVertices()`, `D3Measure()`
 - `filter::AbstractTruthFilter`: the filter for the branching strategy, e.g., `EnvFilter()`, `NoFilter()`
 - `table_solver`: the solver configuration, e.g., `TensorNetworkSolver()`
 """
 function optimal_branches(g::SimpleGraph, vertices::AbstractVector, strategy::AbstractBranching;
-            measurement::AbstractMeasure = NumOfVertices(),
+            measure::AbstractMeasure = NumOfVertices(),
             table_filter::AbstractTruthFilter = NoFilter(),
             table_solver = TensorNetworkSolver()
         )
@@ -97,7 +97,7 @@ function optimal_branches(g::SimpleGraph, vertices::AbstractVector, strategy::Ab
     filtered_tbl = filt(g, vertices, openvertices, tbl, table_filter)
 
     # implement the branching strategy
-    branches = impl_strategy(g, vertices, filtered_tbl, strategy, measurement)
+    branches = impl_strategy(g, vertices, filtered_tbl, strategy, measure)
     return branches
 end
 

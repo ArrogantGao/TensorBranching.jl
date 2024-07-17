@@ -28,13 +28,13 @@ Compute the subcovers for a given set of bit strings by search all possible clau
 - `allcovers::Vector{SubCover{INT}}`: The computed subcovers.
 
 """
-function subcovers_naive(n::Int, bs::Union{Vector{INT}, AbstractVector{Vector{INT}}}, vertices::Vector{Int}, g::SimpleGraph, measurement::AbstractMeasure) where {INT}
+function subcovers_naive(n::Int, bs::Union{Vector{INT}, AbstractVector{Vector{INT}}}, vertices::Vector{Int}, g::SimpleGraph, measure::AbstractMeasure) where {INT}
     allclauses = all_clauses_naive(n, bs)
     allcovers = Vector{SubCover{INT}}()
     for (i, c) in enumerate(allclauses)
         ids = covered_items(bs, c)
 
-        n_rm = size_reduced(g, vertices, c, measurement)
+        n_rm = size_reduced(g, vertices, c, measure)
 
         push!(allcovers, SubCover(ids, c, n_rm))
     end
@@ -56,7 +56,7 @@ Compute the subcovers of a set of bit strings by iteratively gathering clauses.
 - `allcovers::Vector{SubCover}`: A vector of `SubCover` objects representing the subcovers.
 
 """
-function subcovers(bss::AbstractVector{Vector{INT}}, vertices::Vector{Int}, g::SimpleGraph, measurement::AbstractMeasure) where {INT}
+function subcovers(bss::AbstractVector{Vector{INT}}, vertices::Vector{Int}, g::SimpleGraph, measure::AbstractMeasure) where {INT}
     n = length(vertices)
     bs = vcat(bss...)
     all_clauses = Set{Clause{INT}}()
@@ -79,11 +79,11 @@ function subcovers(bss::AbstractVector{Vector{INT}}, vertices::Vector{Int}, g::S
         end
     end
 
-    allcovers = [SubCover(covered_items(bss, c), c, size_reduced(g, vertices, c, measurement)) for c in all_clauses]
+    allcovers = [SubCover(covered_items(bss, c), c, size_reduced(g, vertices, c, measure)) for c in all_clauses]
 
     return allcovers
 end
 
-function subcovers(tbl::BranchingTable{INT}, vertices::Vector{Int}, g::SimpleGraph, measurement::AbstractMeasure) where{INT}
-    return subcovers(tbl.table, vertices, g, measurement)
+function subcovers(tbl::BranchingTable{INT}, vertices::Vector{Int}, g::SimpleGraph, measure::AbstractMeasure) where{INT}
+    return subcovers(tbl.table, vertices, g, measure)
 end
