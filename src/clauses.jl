@@ -60,7 +60,7 @@ function subcovers(bss::AbstractVector{Vector{INT}}, vertices::Vector{Int}, g::S
     n = nv(g)
     bs = vcat(bss...)
     all_clauses = Set{Clause{INT}}()
-    temp_clauses = [Clause(bmask(INT, 1:length(bs[i])), bs[i]) for i in 1:length(bs)]
+    temp_clauses = [Clause(bmask(INT, 1:n), bs[i]) for i in 1:length(bs)]
     while !isempty(temp_clauses)
         c = pop!(temp_clauses)
         if !(c in all_clauses)
@@ -69,7 +69,7 @@ function subcovers(bss::AbstractVector{Vector{INT}}, vertices::Vector{Int}, g::S
             for i in 1:length(bss)
                 if i ∉ idc                
                     for b in bss[i]
-                        c_new = gather2(n, c, Clause(bmask(INT, 1:length(b)), b))
+                        c_new = gather2(n, c, Clause(bmask(INT, 1:n), b))
                         if (c_new != c) && c_new.mask != 0
                             push!(temp_clauses, c_new)
                         end
@@ -85,5 +85,5 @@ function subcovers(bss::AbstractVector{Vector{INT}}, vertices::Vector{Int}, g::S
 end
 
 function subcovers(tbl::BranchingTable{INT}, vertices::Vector{Int}, g::SimpleGraph, measurement::AbstractMeasure) where{INT}
-    return subcovers(tbl2longlongint(tbl), vertices, g, measurement)
+    return subcovers(tbl.table, vertices, g, measurement)
 end

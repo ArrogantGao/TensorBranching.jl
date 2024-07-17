@@ -53,7 +53,7 @@ BranchingTable{LongLongUInt{1}}:
 
 To cover the branching table, at least one clause in each row must be satisfied.
 """
-struct BranchingTable{INT}
+struct BranchingTable{INT <: Integer}
     bit_length::Int
     table::Vector{Vector{INT}}
 end
@@ -61,14 +61,14 @@ function BranchingTable(arr::AbstractArray{<:CountingTropical{<:Real, <:ConfigEn
     return BranchingTable(N, filter(!isempty, vec(map(collect_configs, arr))))
 end
 function BranchingTable(n::Int, arr::AbstractVector{<:AbstractVector})
-    return BranchingTable(n, [longlongint(n, x) for x in arr])
+    return BranchingTable(n, [_vec2int.(LongLongUInt, x) for x in arr])
 end
 nbits(t::BranchingTable) = t.bit_length
 Base.:(==)(t1::BranchingTable, t2::BranchingTable) = all(x -> Set(x[1]) == Set(x[2]), zip(t1.table, t2.table))
 function Base.show(io::IO, t::BranchingTable{INT}) where INT
     println(io, "BranchingTable{$INT}")
     for (i, row) in enumerate(t.table)
-        print(io, join(["$r" for r in row], ", "))
+        print(io, join(["$(bitstring(r)[end-nbits(t)+1:end])" for r in row], ", "))
         i < length(t.table) && println(io)
     end
 end
@@ -94,11 +94,5 @@ function covered_by(t::BranchingTable, dnf::DNF)
     all(x->any(y->covered_by(y, dnf), x), t.table)
 end
 function covered_by(s::StaticBitVector, dnf::DNF)
-    @assert length(s.data) == 1 "length of StaticBitVector too long, not yet supported."
-    any(c->covered_by(s.data[1], c), dnf.clauses)
+    any(c->covered_by(LongLongUInt(s.data), c), dnf.clauses)
 end
-
-function tbl2longlongint(tbl::BranchingTable{INT}) where INT
-    return [long_long_uint.(x) for x in tbl.table]
-end
-long_long_uint(v::AbstractVector) = LongLongUInt(StaticBitVector(v))

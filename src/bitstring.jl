@@ -141,7 +141,6 @@ function gather2(n::Int, c1::Clause{INT}, c2::Clause{INT}) where INT
     return Clause(mask, val)
 end
 
-function BitBasis.LongLongUInt(sv::StaticBitVector)
-    @assert length(sv.data) == 1 "bit string too long!"
+function _vec2int(::Type{<:LongLongUInt}, sv::StaticBitVector)
     return LongLongUInt(sv.data)
 end

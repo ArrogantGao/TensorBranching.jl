@@ -3,7 +3,7 @@ using TensorBranching: LongLongUInt, StaticElementVector, optimal_branches
 using EliminateGraphs: mis2, EliminateGraph
 
 @testset "branching strategy" begin
-    @test LongLongUInt(StaticElementVector(2, [0, 0, 1])) == LongLongUInt{1}(4)
+    @test TensorBranching._vec2int(LongLongUInt, StaticElementVector(2, [0, 0, 1])) == LongLongUInt{1}(4)
 
     graph = graph_from_tuples(3, [(1, 2), (2, 3), (3, 1)])
     tbl = reduced_alpha_configs(TensorNetworkSolver(), graph, [1, 2])

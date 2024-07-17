@@ -10,7 +10,7 @@ A struct representing the NaiveBranching branching strategy.
 struct NaiveBranching <: AbstractBranching end
 
 function impl_strategy(g::SimpleGraph, vertices::Vector{Int}, tbl::BranchingTable{INT}, ::NaiveBranching, measurement::AbstractMeasure) where INT
-    return Branches([Branch(Clause(bmask(INT, 1:nbits(tbl)), INT(first(x))), vertices, g, measurement) for x in tbl.table])
+    return Branches([Branch(Clause(bmask(INT, 1:nbits(tbl)), first(x)), vertices, g, measurement) for x in tbl.table])
 end
 
 """
@@ -124,7 +124,7 @@ function filt(g::SimpleGraph, vertices::Vector{Int}, openvertices::Vector{Int}, 
                 pink_block = setdiff(neibs_0[i], neibs_0[j])
                 sg_pink, sg_vec = induced_subgraph(g, collect(pink_block))
                 mis_pink = mis2(EliminateGraph(sg_pink))
-                if (count_ones(INT(tbl.table[i][1])) + mis_pink ≤ count_ones(LongLongUInt(tbl.table[j][1]))) && (!iszero(mis_pink))
+                if (count_ones(tbl.table[i][1]) + mis_pink ≤ count_ones(tbl.table[j][1])) && (!iszero(mis_pink))
                     flag = false
                     break
                 end
@@ -135,7 +135,7 @@ function filt(g::SimpleGraph, vertices::Vector{Int}, openvertices::Vector{Int}, 
         end
     end
 
-    return BranchingTable(new_table)
+    return BranchingTable(nv(g), new_table)
 end
 
 struct Branch{T}
