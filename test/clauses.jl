@@ -5,7 +5,7 @@ using Test, TensorBranching
     vertices = [1, 2, 3, 4, 5]
     tbl = reduced_alpha_configs(TensorBranching.TensorNetworkSolver(), graph_sat, [1, 4, 5])
     bss = Tbl2BitStrs(tbl)
-    for measurement in [NumOfVertices(), NumOfDegree()]
+    for measurement in [NumOfVertices(), D3Measure()]
         scn = subcovers_naive(bss, vertices, graph_sat, measurement)
         sc = subcovers(bss, vertices, graph_sat, measurement)
         @test length(scn) == length(sc)

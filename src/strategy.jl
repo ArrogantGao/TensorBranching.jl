@@ -1,5 +1,5 @@
 abstract type AbstractBranching end
-abstract type AbstractMeasurement end
+abstract type AbstractMeasure end
 abstract type AbstractVertexSelector end
 abstract type AbstractTruthFilter end
 
@@ -9,7 +9,7 @@ A struct representing the NaiveBranching branching strategy.
 """
 struct NaiveBranching <: AbstractBranching end
 
-function impl_strategy(g::SimpleGraph, vertices::Vector{Int}, tbl::BranchingTable{N}, strategy::NaiveBranching, measurement::AbstractMeasurement) where{N}
+function impl_strategy(g::SimpleGraph, vertices::Vector{Int}, tbl::BranchingTable{N}, strategy::NaiveBranching, measurement::AbstractMeasure) where{N}
     return Branches([Branch(Clause(bmask(BitStr{N, Int}, 1:N), BitStr(first(x))), vertices, g, measurement) for x in tbl.table])
 end
 
@@ -32,11 +32,11 @@ struct SetCoverBranching <: AbstractBranching
     SetCoverBranching(max_itr::Int) = new(max_itr)
 end
 
-function impl_strategy(g::SimpleGraph, vertices::Vector{Int}, tbl::BranchingTable{N}, strategy::SetCoverBranching, measurement::AbstractMeasurement) where{N}
+function impl_strategy(g::SimpleGraph, vertices::Vector{Int}, tbl::BranchingTable{N}, strategy::SetCoverBranching, measurement::AbstractMeasure) where{N}
     return setcover_strategy(tbl, vertices, g, strategy.max_itr, measurement)
 end
 
-struct NumOfVertices <: AbstractMeasurement end # each vertex is counted as 1
+struct NumOfVertices <: AbstractMeasure end # each vertex is counted as 1
 
 measure(g::SimpleGraph, ::NumOfVertices) = nv(g)
 
@@ -44,9 +44,14 @@ function size_reduced(g::SimpleGraph, vertices::Vector{Int}, clause::Clause{N, T
     return length(removed_vertices(vertices, g, clause))
 end
 
-struct NumOfDegree <: AbstractMeasurement end # n = sum max{d - 2, 0}
+"""
+    D3Measure <: AbstractMeasure
 
-function measure(g::SimpleGraph, ::NumOfDegree)
+A measure of complexity by counting the number of vertices with degree at least 3.
+"""
+struct D3Measure <: AbstractMeasure end # n = sum max{d - 2, 0}
+
+function measure(g::SimpleGraph, ::D3Measure)
     if nv(g) == 0
         return 0
     else
@@ -55,7 +60,7 @@ function measure(g::SimpleGraph, ::NumOfDegree)
     end
 end
 
-function size_reduced(g::SimpleGraph, vertices::Vector{Int}, clause::Clause{N, T}, measurement::NumOfDegree) where{N, T}
+function size_reduced(g::SimpleGraph, vertices::Vector{Int}, clause::Clause{N, T}, measurement::D3Measure) where{N, T}
     return measure(g, measurement) - measure(induced_subgraph(g, setdiff(1:nv(g), removed_vertices(vertices, g, clause)))[1], measurement)
 end
 
@@ -139,7 +144,7 @@ struct Branch{T}
     mis::Int
 end
 
-function Branch(clause::Clause{N, C}, vertices::Vector{Int}, g::SimpleGraph, measurement::AbstractMeasurement) where {N, C}
+function Branch(clause::Clause{N, C}, vertices::Vector{Int}, g::SimpleGraph, measurement::AbstractMeasure) where {N, C}
     vertices_removed = removed_vertices(vertices, g, clause)
     sr = size_reduced(g, vertices, clause, measurement)
     return Branch(vertices_removed, sr, count_ones(clause.val))

@@ -28,7 +28,7 @@ Compute the subcovers for a given set of bit strings by search all possible clau
 - `allcovers::Vector{SubCover{N, T}}`: The computed subcovers.
 
 """
-function subcovers_naive(bs::Union{Vector{BitStr{N, T}}, AbstractVector{Vector{BitStr{N, T}}}}, vertices::Vector{Int}, g::SimpleGraph, measurement::AbstractMeasurement) where{N, T}
+function subcovers_naive(bs::Union{Vector{BitStr{N, T}}, AbstractVector{Vector{BitStr{N, T}}}}, vertices::Vector{Int}, g::SimpleGraph, measurement::AbstractMeasure) where{N, T}
     allclauses = all_clauses_naive(bs)
     allcovers = Vector{SubCover{N, T}}()
     for (i, c) in enumerate(allclauses)
@@ -56,7 +56,7 @@ Compute the subcovers of a set of bit strings by iteratively gathering clauses.
 - `allcovers::Vector{SubCover}`: A vector of `SubCover` objects representing the subcovers.
 
 """
-function subcovers(bss::AbstractVector{Vector{BitStr{N, T}}}, vertices::Vector{Int}, g::SimpleGraph, measurement::AbstractMeasurement) where{N, T}
+function subcovers(bss::AbstractVector{Vector{BitStr{N, T}}}, vertices::Vector{Int}, g::SimpleGraph, measurement::AbstractMeasure) where{N, T}
     bs = vcat(bss...)
     all_clauses = Set{Clause{N, T}}()
     temp_clauses = [Clause(bmask(BitStr{N, T}, 1:length(bs[i])), bs[i]) for i in 1:length(bs)]
@@ -83,6 +83,6 @@ function subcovers(bss::AbstractVector{Vector{BitStr{N, T}}}, vertices::Vector{I
     return allcovers
 end
 
-function subcovers(tbl::BranchingTable{N, C}, vertices::Vector{Int}, g::SimpleGraph, measurement::AbstractMeasurement) where{N, C}
+function subcovers(tbl::BranchingTable{N, C}, vertices::Vector{Int}, g::SimpleGraph, measurement::AbstractMeasure) where{N, C}
     return subcovers(Tbl2BitStrs(tbl), vertices, g, measurement)
 end

@@ -16,7 +16,7 @@ export graph_from_tuples, reduced_alpha, reduced_alpha_configs, collect_configs,
 
 export SolverConfig
 export AbstractBranching, NaiveBranching, SetCoverBranching
-export AbstractMeasurement, NumOfVertices, NumOfDegree
+export AbstractMeasure, NumOfVertices, D3Measure
 export AbstractVertexSelector, MinBoundarySelector, ManualSelector
 export AbstractTruthFilter, NoFilter, EnvFilter
 export AbstractMISSolver, TensorNetworkSolver

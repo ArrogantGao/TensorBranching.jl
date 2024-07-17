@@ -14,7 +14,7 @@ end
 
 @testset "optimal_branches" begin
     petersen = smallgraph(:petersen)
-    for strategy in [NaiveBranching(), SetCoverBranching()], vertex_select in [ManualSelector([1, 2, 3, 4]), MinBoundarySelector(2)], measurement in [NumOfVertices(), NumOfDegree()], table_filter in [EnvFilter(), NoFilter()]
+    for strategy in [NaiveBranching(), SetCoverBranching()], vertex_select in [ManualSelector([1, 2, 3, 4]), MinBoundarySelector(2)], measurement in [NumOfVertices(), D3Measure()], table_filter in [EnvFilter(), NoFilter()]
         vertices = TensorBranching.select_vertex(petersen, vertex_select)
         branches = optimal_branches(petersen, vertices, strategy; measurement, table_filter)
         @test branches isa Branches
@@ -24,7 +24,7 @@ end
 @testset "missolve" begin
     g = smallgraph(:tutte)
     mis = mis2(EliminateGraph(g))
-    for branching_strategy in [NaiveBranching(), SetCoverBranching()], vertex_selector in [MinBoundarySelector(2)], measurement in [NumOfVertices(), NumOfDegree()], table_filter in [EnvFilter(), NoFilter()]
+    for branching_strategy in [NaiveBranching(), SetCoverBranching()], vertex_selector in [MinBoundarySelector(2)], measurement in [NumOfVertices(), D3Measure()], table_filter in [EnvFilter(), NoFilter()]
         cfg = SolverConfig(; branching_strategy, vertex_selector, measurement, table_filter)
         @test missolve(g, cfg) == mis
         @test missolve(g, cfg; show_count=true)[1] == mis

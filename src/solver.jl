@@ -1,16 +1,16 @@
 """
-    SolverConfig{ST<:AbstractMISSolver, BT<:AbstractBranching, MT<:AbstractMeasurement, VT<:AbstractVertexSelector, FT<:AbstractTruthFilter}
+    SolverConfig{ST<:AbstractMISSolver, BT<:AbstractBranching, MT<:AbstractMeasure, VT<:AbstractVertexSelector, FT<:AbstractTruthFilter}
 
 The configuration for the optimal branching MIS solver.
 
 # Fields
 - `table_solver::ST`: the MIS solver, e.g., `TensorNetworkSolver()`
 - `branching_strategy::BT`: the branching strategy, e.g., `NaiveBranching()`, `SetCoverBranching()`
-- `measurement::MT`: the measurement for the branching strategy, e.g., `NumOfVertices()`, `NumOfDegree()`
+- `measurement::MT`: the measurement for the branching strategy, e.g., `NumOfVertices()`, `D3Measure()`
 - `vertex_selector::VT`: the vertex selector, e.g., `MinBoundarySelector(2)`, `ManualSelector([1, 2, 3])`
 - `table_filter::FT`: the truth filter, e.g., `EnvFilter()`, `NoFilter()`
 """
-Base.@kwdef struct SolverConfig{ST<:AbstractMISSolver, BT<:AbstractBranching, MT<:AbstractMeasurement, VT<:AbstractVertexSelector, FT<:AbstractTruthFilter}
+Base.@kwdef struct SolverConfig{ST<:AbstractMISSolver, BT<:AbstractBranching, MT<:AbstractMeasure, VT<:AbstractVertexSelector, FT<:AbstractTruthFilter}
     table_solver::ST = TensorNetworkSolver()
     branching_strategy::BT = NaiveBranching()
     measurement::MT = NumOfVertices()
@@ -68,7 +68,7 @@ function mis_solver(g::SimpleGraph, config::SolverConfig)
 end
 
 """
-    optimal_branches(g::SimpleGraph, vertices::AbstractVector, strategy::AbstractBranching; measurement::AbstractMeasurement = NumOfVertices(), filter::AbstractTruthFilter = NoFilter())
+    optimal_branches(g::SimpleGraph, vertices::AbstractVector, strategy::AbstractBranching; measurement::AbstractMeasure = NumOfVertices(), filter::AbstractTruthFilter = NoFilter())
     
 Find the optimal branches for the given graph and vertices.
 
@@ -78,12 +78,12 @@ Find the optimal branches for the given graph and vertices.
 - `strategy::AbstractBranching`: the branching strategy, e.g., `NaiveBranching()`, `SetCoverBranching()`
 
 # Keyword Arguments
-- `measurement::AbstractMeasurement`: the measurement for the branching strategy, e.g., `NumOfVertices()`, `NumOfDegree()`
+- `measurement::AbstractMeasure`: the measurement for the branching strategy, e.g., `NumOfVertices()`, `D3Measure()`
 - `filter::AbstractTruthFilter`: the filter for the branching strategy, e.g., `EnvFilter()`, `NoFilter()`
 - `table_solver`: the solver configuration, e.g., `TensorNetworkSolver()`
 """
 function optimal_branches(g::SimpleGraph, vertices::AbstractVector, strategy::AbstractBranching;
-            measurement::AbstractMeasurement = NumOfVertices(),
+            measurement::AbstractMeasure = NumOfVertices(),
             table_filter::AbstractTruthFilter = NoFilter(),
             table_solver = TensorNetworkSolver()
         )

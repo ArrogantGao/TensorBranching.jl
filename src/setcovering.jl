@@ -118,7 +118,7 @@ function random_pick(xs::Vector{TF}, sub_covers::AbstractVector{SubCover{N, T}},
     return [sub_covers[i] for i in picked]
 end
 
-function setcover_strategy(tbl::BranchingTable{N, C}, vertices::Vector{Int}, g::SimpleGraph, max_itr::Int, measurement::AbstractMeasurement) where{N, C}
+function setcover_strategy(tbl::BranchingTable{N, C}, vertices::Vector{Int}, g::SimpleGraph, max_itr::Int, measurement::AbstractMeasure) where{N, C}
     sub_covers = subcovers(tbl, vertices, g, measurement)
     cov, cx = cover(sub_covers, max_itr)
     branches = Branches([Branch(sc.clause, vertices, g, measurement) for sc in cov])
