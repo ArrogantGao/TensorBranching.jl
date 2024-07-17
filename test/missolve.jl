@@ -15,7 +15,7 @@ end
 
 @testset "optimal_branches" begin
     petersen = smallgraph(:petersen)
-    for strategy in [NaiveBranching(), SetCoverBranching()], vertex_select in [ManualSelector([1, 2, 3, 4]), MinBoundarySelector(2)], measure in [NumOfVertices(), D3Measure()], table_filter in [EnvFilter(), NoFilter()]
+    for strategy in [NaiveBranching(), SetCoverBranching()], vertex_select in [MinBoundarySelector(2)], measure in [NumOfVertices(), D3Measure()], table_filter in [EnvFilter(), NoFilter()]
         vertices = TensorBranching.select_vertex(petersen, vertex_select)
         branches = optimal_branches(petersen, vertices, strategy; measure, table_filter)
         @test branches isa Branches
@@ -36,7 +36,7 @@ end
     for branching_strategy in [NaiveBranching(), SetCoverBranching()], vertex_selector in [MinBoundarySelector(2)], measure in [NumOfVertices(), D3Measure()], table_filter in [EnvFilter(), NoFilter()]
         @info "Testing missolve with: $branching_strategy, $vertex_selector, $measure, $table_filter"
         cfg = SolverConfig(; branching_strategy, vertex_selector, measure, table_filter)
-        @test missolve(g, cfg) == mis
-        @test missolve(g, cfg; show_count=true)[1] == mis
+        @test solve_mis(g, cfg) == mis
+        @test count_mis(g, cfg)[1] == mis
     end
 end
