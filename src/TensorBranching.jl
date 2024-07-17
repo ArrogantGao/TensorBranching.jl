@@ -17,13 +17,13 @@ export graph_from_tuples, reduced_alpha, reduced_alpha_configs, collect_configs,
 export SolverConfig
 export AbstractBranching, NaiveBranching, SetCoverBranching
 export AbstractMeasure, NumOfVertices, D3Measure
-export AbstractVertexSelector, MinBoundarySelector, ManualSelector
+export AbstractVertexSelector, MinBoundarySelector
 export AbstractTruthFilter, NoFilter, EnvFilter
 export AbstractMISSolver, TensorNetworkSolver
 
 export Branch, Branches, effective_γ, optimal_branches
 
-export missolve, CountingMIS, branching_tree
+export solve_mis, count_mis, CountingMIS, branching_tree
 
 export graph_from_artifact
 

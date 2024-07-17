@@ -83,15 +83,6 @@ function select_vertex(g::SimpleGraph{Int}, vertex_select::MinBoundarySelector)
     return vs_min
 end
 
-struct ManualSelector <: AbstractVertexSelector
-    vertices::Vector{Int}
-end
-
-function select_vertex(g::SimpleGraph, vertex_select::ManualSelector)
-    vertices = vertex_select.vertices
-    return vertices
-end
-
 struct NoFilter <: AbstractTruthFilter end
 
 filt(g::SimpleGraph, vertices::Vector{Int}, openvertices::Vector{Int}, tbl::BranchingTable{N, C}, ::NoFilter) where{N, C} = tbl

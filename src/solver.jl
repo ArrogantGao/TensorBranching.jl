@@ -30,9 +30,14 @@ Solve the maximum independent set problem for the given graph and configuration.
 # Keyword Arguments
 - `show_count::Bool`: whether to show the count of the MIS
 """
-function missolve(g::SimpleGraph, config::SolverConfig; show_count = false)
+function solve_mis(g::SimpleGraph, config::SolverConfig)
     mis = mis_solver(g, config)
-    return show_count ? (mis.mis, mis.count) : mis.mis
+    return mis.mis
+end
+
+function count_mis(g::SimpleGraph, config::SolverConfig)
+    mis = mis_solver(g, config)
+    return mis.mis, mis.count
 end
 
 function mis_solver(g::SimpleGraph, config::SolverConfig)
