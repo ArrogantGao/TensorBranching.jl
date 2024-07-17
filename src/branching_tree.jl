@@ -75,7 +75,7 @@ function _branching_tree(g::SimpleGraph, strategy::AbsractBranching, kneighbor::
         return BranchingNode(g, children=[_branching_tree(induced_subgraph(g, setdiff(1:nv(g), v ∪ neighbors(g, v)))[1], strategy, kneighbor, use_rv), _branching_tree(induced_subgraph(g, setdiff(1:nv(g), v))[1], strategy, kneighbor, use_rv)], removed=[v ∪ neighbors(g, v), [v]])
     end
     
-    vertices, openvertices, dnf = optimal_branching_dnf(g, strategy, kneighbor, use_rv)
+    vertices, openvertices, dnf = optimal_branches(g, strategy, kneighbor, use_rv)
     # @assert !isempty(vertices)
     
     root = BranchingNode(g)

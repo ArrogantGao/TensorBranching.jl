@@ -10,7 +10,7 @@ A struct representing the NaiveBranching branching strategy.
 struct NaiveBranching <: AbsractBranching end
 
 function impl_strategy(g::SimpleGraph, vertices::Vector{Int}, tbl::BranchingTable{N}, strategy::NaiveBranching, measurement::AbstractMeasurement) where{N}
-    return DNF([Clause(bmask(BitStr{N, Int}, 1:N), BitStr(first(x))) for x in tbl.table]), 0.0
+    return Branches([Branch(Clause(bmask(BitStr{N, Int}, 1:N), BitStr(first(x))), vertices, g, measurement) for x in tbl.table])
 end
 
 """
@@ -36,17 +36,17 @@ function impl_strategy(g::SimpleGraph, vertices::Vector{Int}, tbl::BranchingTabl
     return setcover_strategy(tbl, vertices, g, strategy.max_itr, measurement)
 end
 
-struct NaiveMeasure <: AbstractMeasurement end # each vertex is counted as 1
+struct NumOfVertices <: AbstractMeasurement end # each vertex is counted as 1
 
-measure(g::SimpleGraph, ::NaiveMeasure) = nv(g)
+measure(g::SimpleGraph, ::NumOfVertices) = nv(g)
 
-function nv_removed(g::SimpleGraph, vertices::Vector{Int}, clause::Clause{N, T}, measurement::NaiveMeasure) where{N, T}
+function size_reduced(g::SimpleGraph, vertices::Vector{Int}, clause::Clause{N, T}, measurement::NumOfVertices) where{N, T}
     return length(removed_vertices(vertices, g, clause))
 end
 
-struct D3Measure <: AbstractMeasurement end # n = sum max{d - 2, 0}
+struct NumOfDegree <: AbstractMeasurement end # n = sum max{d - 2, 0}
 
-function measure(g::SimpleGraph, ::D3Measure)
+function measure(g::SimpleGraph, ::NumOfDegree)
     if nv(g) == 0
         return 0
     else
@@ -55,15 +55,15 @@ function measure(g::SimpleGraph, ::D3Measure)
     end
 end
 
-function nv_removed(g::SimpleGraph, vertices::Vector{Int}, clause::Clause{N, T}, measurement::D3Measure) where{N, T}
+function size_reduced(g::SimpleGraph, vertices::Vector{Int}, clause::Clause{N, T}, measurement::NumOfDegree) where{N, T}
     return measure(g, measurement) - measure(induced_subgraph(g, setdiff(1:nv(g), removed_vertices(vertices, g, clause)))[1], measurement)
 end
 
-struct MinBoundSelector <: AbstractVertexSelector
+struct MinBoundarySelector <: AbstractVertexSelector
     k::Int # select the subgraph with minimum open vertices by k-layers of neighbors
 end
 
-function select_vertex(g::SimpleGraph{Int}, vertex_select::MinBoundSelector)
+function select_vertex(g::SimpleGraph{Int}, vertex_select::MinBoundarySelector)
 
     kneighbor = vertex_select.k
 
@@ -136,4 +136,27 @@ function filt(g::SimpleGraph, vertices::Vector{Int}, openvertices::Vector{Int}, 
     end
 
     return BranchingTable(new_table)
+end
+
+struct Branch{T}
+    vertices_removed::Vector{Int}
+    size_reduced::T
+    mis::Int
+end
+
+function Branch(clause::Clause{N, C}, vertices::Vector{Int}, g::SimpleGraph, measurement::AbstractMeasurement) where {N, C}
+    vertices_removed = removed_vertices(vertices, g, clause)
+    sr = size_reduced(g, vertices, clause, measurement)
+    return Branch(vertices_removed, sr, count_ones(clause.val))
+end
+
+struct Branches{T}
+    branches::Vector{Branch{T}}
+end
+
+Base.:(==)(b1::Branch, b2::Branch) = (Set(b1.vertices_removed) == Set(b2.vertices_removed)) && (b1.size_reduced == b2.size_reduced) && (b1.mis == b2.mis)
+Base.:(==)(b1::Branches, b2::Branches) = ((b1.branches) == (b2.branches))
+
+function effective_γ(branches::Branches{T}) where{T}
+    return complexity([branches.branches[i].size_reduced for i in 1:length(branches.branches)])
 end

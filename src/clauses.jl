@@ -34,7 +34,7 @@ function subcovers_naive(bs::Union{Vector{BitStr{N, T}}, AbstractVector{Vector{B
     for (i, c) in enumerate(allclauses)
         ids = covered_items(bs, c)
 
-        n_rm = nv_removed(g, vertices, c, measurement)
+        n_rm = size_reduced(g, vertices, c, measurement)
 
         push!(allcovers, SubCover(ids, c, n_rm))
     end
@@ -78,7 +78,7 @@ function subcovers(bss::AbstractVector{Vector{BitStr{N, T}}}, vertices::Vector{I
         end
     end
 
-    allcovers = [SubCover(covered_items(bss, c), c, nv_removed(g, vertices, c, measurement)) for c in all_clauses]
+    allcovers = [SubCover(covered_items(bss, c), c, size_reduced(g, vertices, c, measurement)) for c in all_clauses]
 
     return allcovers
 end

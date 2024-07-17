@@ -5,7 +5,7 @@ using Test, TensorBranching
     bbs = [[bsi] for bsi in bs]
     g = random_regular_graph(10, 3)
     v = [1:4...]
-    scs = subcovers(bbs, v, g, NaiveMeasure())
+    scs = subcovers(bbs, v, g, NumOfVertices())
     cov, cx = cover(scs, 4)
     picked = Set{Int}()
     for covi in cov

@@ -15,9 +15,11 @@ export sbranches, complexity
 export graph_from_tuples, reduced_alpha, reduced_alpha_configs, collect_configs, BranchingTable, DNF, booleans, covered_by
 
 export AbsractBranching, NaiveBranching, SetCoverBranching
-export AbstractMeasurement, NaiveMeasure, D3Measure
-export AbstractVertexSelector, MinBoundSelector, ManualSelector
+export AbstractMeasurement, NumOfVertices, NumOfDegree
+export AbstractVertexSelector, MinBoundarySelector, ManualSelector
 export AbstractTruthFilter, NoFilter, EnvFilter
+
+export Branch, Branches, effective_γ, optimal_branches
 
 export missolve, CountingMIS, branching_tree
 

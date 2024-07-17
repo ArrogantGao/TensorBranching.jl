@@ -93,18 +93,3 @@ end
 function Tbl2BitStrs(tbl::BranchingTable{N}) where N
     return [BitStr.(x) for x in tbl.table]
 end
-
-# vs a subgraph, return N(vs)
-function Graphs.neighbors(g::SimpleGraph, vs::Vector{Int})
-    set_vs = Set(vs)
-    set_neighbors = Set{Int}()
-    for v in vs
-        neighbors_v = neighbors(g, v)
-        for n in neighbors_v
-            if n ∉ set_vs
-                push!(set_neighbors, n)
-            end
-        end
-    end
-    return set_neighbors
-end

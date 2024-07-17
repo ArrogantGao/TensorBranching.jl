@@ -1,4 +1,4 @@
-function missolve(g::SimpleGraph; show_count = false, strategy::AbsractBranching = NaiveBranching(), measurement::AbstractMeasurement = NaiveMeasure(), vertex_select::AbstractVertexSelector = MinBoundSelector(2), filter::AbstractTruthFilter = EnvFilter())
+function missolve(g::SimpleGraph; show_count = false, strategy::AbsractBranching = NaiveBranching(), measurement::AbstractMeasurement = NumOfVertices(), vertex_select::AbstractVertexSelector = MinBoundarySelector(2), filter::AbstractTruthFilter = EnvFilter())
     mis = mis_solver(g, strategy, measurement, vertex_select, filter)
     return show_count ? (mis.mis, mis.count) : mis.mis
 end
@@ -17,18 +17,17 @@ function mis_solver(g::SimpleGraph, strategy::AbsractBranching, measurement::Abs
         v = argmax(dg)
         return max(1 + mis_solver(induced_subgraph(g, setdiff(1:nv(g), v ∪ neighbors(g, v)))[1], strategy, measurement, vertex_select, filter), mis_solver(induced_subgraph(g, setdiff(1:nv(g), v))[1], strategy, measurement, vertex_select, filter))
     else
-        vertices, openvertices, dnf, γ = optimal_branching_dnf(g, strategy, measurement, vertex_select, filter)
+        branches = optimal_branches(g, strategy, measurement, vertex_select, filter)
         # @assert !isempty(vertices)
 
-        mis_count = Vector{CountingMIS}(undef, length(dnf.clauses))
+        mis_count = Vector{CountingMIS}(undef, length(branches.branches))
         
-        @threads for i in 1:length(dnf.clauses)
-            clause = dnf.clauses[i]
-            rvs = removed_vertices(vertices, g, clause)
+        @threads for i in 1:length(branches.branches)
+            rvs = branches.branches[i].vertices_removed
             gi = copy(g)
             rem_vertices!(gi, rvs)
             # @assert !isempty(rvs)
-            mis_count[i] = mis_solver(gi, strategy, measurement, vertex_select, filter) + count_ones(clause.val)
+            mis_count[i] = mis_solver(gi, strategy, measurement, vertex_select, filter) + branches.branches[i].mis
         end
         max_mis = maximum(mis_count)
 
@@ -36,7 +35,7 @@ function mis_solver(g::SimpleGraph, strategy::AbsractBranching, measurement::Abs
     end
 end
 
-function optimal_branching_dnf(g::SimpleGraph, strategy::AbsractBranching, measurement::AbstractMeasurement, vertex_select::AbstractVertexSelector, filter::AbstractTruthFilter)
+function optimal_branches(g::SimpleGraph, strategy::AbsractBranching, measurement::AbstractMeasurement, vertex_select::AbstractVertexSelector, filter::AbstractTruthFilter)
     
     vertices, openvertices = select_vertex(g, vertex_select)
 
@@ -44,9 +43,9 @@ function optimal_branching_dnf(g::SimpleGraph, strategy::AbsractBranching, measu
     tbl = reduced_alpha_configs(subg, Int[findfirst(==(v), vertices) for v in openvertices])
 
     filtered_tbl = filt(g, vertices, openvertices, tbl, filter)
-    opt_dnf, γ = impl_strategy(g, vertices, filtered_tbl, strategy, measurement)
+    branches = impl_strategy(g, vertices, filtered_tbl, strategy, measurement)
 
-    return vertices, openvertices, opt_dnf, γ
+    return branches
 end
 
 
