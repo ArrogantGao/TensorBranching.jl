@@ -7,7 +7,7 @@ A clause is a pair of bit strings, `mask` and `val`, where `mask` is a bit strin
 ### Examples
 ```jldoctest
 julia> Clause(bit"1110", bit"1001")
-Clause: mask: 1110 ₍₂₎, val: 1000 ₍₂₎
+Clause{DitStr{2, 4, Int64}}: mask: 1110 ₍₂₎, val: 1000 ₍₂₎
 ```
 
 If some bit in mask is set as 0, then the corresponding bit in val must be 0.
@@ -38,7 +38,7 @@ A subcover is a pair of a set of integers `ids`, a clause `clause` and a integer
 ### Examples
 ```jldoctest
 julia> SubCover([1, 2], Clause(bit"1110", bit"1001"), 3)
-SubCover{4, Int64}: ids: Set([2, 1]), mask: 1110 ₍₂₎, val: 1000 ₍₂₎, n_rm: 3
+SubCover{DitStr{2, 4, Int64}}: ids: Set([2, 1]), mask: 1110 ₍₂₎, val: 1000 ₍₂₎, n_rm: 3
 ```
 
 """
