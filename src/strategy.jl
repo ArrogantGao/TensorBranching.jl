@@ -64,22 +64,18 @@ struct MinBoundarySelector <: AbstractVertexSelector
 end
 
 function select_vertex(g::SimpleGraph{Int}, vertex_select::MinBoundarySelector)
-
     kneighbor = vertex_select.k
 
-    vs_min = Int[]
-    ovs_min = Int[1:nv(g)...]
+    local vs_min
+    novs_min = nv(g)
     for v in 1:nv(g)
         vs, ovs = neighbor_cover(g, v, kneighbor)
-        if length(ovs) < length(ovs_min)
+        if length(ovs) < novs_min
             vs_min = vs
-            ovs_min = ovs
+            novs_min = length(ovs)
         end
     end
-    vertices = vs_min
-    openvertices = ovs_min
-
-    return vertices, openvertices
+    return vs_min
 end
 
 struct ManualSelector <: AbstractVertexSelector
@@ -88,8 +84,7 @@ end
 
 function select_vertex(g::SimpleGraph, vertex_select::ManualSelector)
     vertices = vertex_select.vertices
-    openvertices = open_vertices(g, vertices)
-    return vertices, openvertices
+    return vertices
 end
 
 struct NoFilter <: AbstractTruthFilter end

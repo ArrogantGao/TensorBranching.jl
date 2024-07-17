@@ -15,7 +15,8 @@ end
 @testset "optimal_branches" begin
     petersen = smallgraph(:petersen)
     for strategy in [NaiveBranching(), SetCoverBranching()], vertex_select in [ManualSelector([1, 2, 3, 4]), MinBoundarySelector(2)], measurement in [NumOfVertices(), NumOfDegree()], filter in [EnvFilter(), NoFilter()]
-        branches = optimal_branches(petersen, strategy, measurement, vertex_select, filter)
+        vertices = TensorBranching.select_vertex(petersen, vertex_select)
+        branches = optimal_branches(petersen, vertices, strategy; measurement, filter)
         @test branches isa Branches
     end
 end

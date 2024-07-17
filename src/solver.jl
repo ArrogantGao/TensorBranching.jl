@@ -17,8 +17,8 @@ function mis_solver(g::SimpleGraph, strategy::AbsractBranching, measurement::Abs
         v = argmax(dg)
         return max(1 + mis_solver(induced_subgraph(g, setdiff(1:nv(g), v ∪ neighbors(g, v)))[1], strategy, measurement, vertex_select, filter), mis_solver(induced_subgraph(g, setdiff(1:nv(g), v))[1], strategy, measurement, vertex_select, filter))
     else
-        branches = optimal_branches(g, strategy, measurement, vertex_select, filter)
-        # @assert !isempty(vertices)
+        vertices = select_vertex(g, vertex_select)
+        branches = optimal_branches(g, vertices, strategy; measurement, filter)
 
         mis_count = Vector{CountingMIS}(undef, length(branches.branches))
         
@@ -35,16 +35,35 @@ function mis_solver(g::SimpleGraph, strategy::AbsractBranching, measurement::Abs
     end
 end
 
-function optimal_branches(g::SimpleGraph, strategy::AbsractBranching, measurement::AbstractMeasurement, vertex_select::AbstractVertexSelector, filter::AbstractTruthFilter)
+"""
+    optimal_branches(g::SimpleGraph, vertices::AbstractVector, strategy::AbsractBranching; measurement::AbstractMeasurement = NumOfVertices(), filter::AbstractTruthFilter = NoFilter())
     
-    vertices, openvertices = select_vertex(g, vertex_select)
+Find the optimal branches for the given graph and vertices.
 
+# Arguments
+- `g::SimpleGraph`: the input graph
+- `vertices::AbstractVector`: the vertices to be considered
+- `strategy::AbsractBranching`: the branching strategy, e.g., `NaiveBranching()`, `SetCoverBranching()`
+
+# Keyword Arguments
+- `measurement::AbstractMeasurement`: the measurement for the branching strategy, e.g., `NumOfVertices()`, `NumOfDegree()`
+- `filter::AbstractTruthFilter`: the filter for the branching strategy, e.g., `EnvFilter()`, `NoFilter()`
+"""
+function optimal_branches(g::SimpleGraph, vertices::AbstractVector, strategy::AbsractBranching;
+            measurement::AbstractMeasurement = NumOfVertices(),
+            filter::AbstractTruthFilter = NoFilter(),
+        )
+    # open vertices and induced subgraph
+    openvertices = open_vertices(g, vertices)
     subg, vmap = induced_subgraph(g, vertices)
+
+    # reduced alpha configurations
     tbl = reduced_alpha_configs(subg, Int[findfirst(==(v), vertices) for v in openvertices])
-
+    # filter out some configurations using the environmental information
     filtered_tbl = filt(g, vertices, openvertices, tbl, filter)
-    branches = impl_strategy(g, vertices, filtered_tbl, strategy, measurement)
 
+    # implement the branching strategy
+    branches = impl_strategy(g, vertices, filtered_tbl, strategy, measurement)
     return branches
 end
 
