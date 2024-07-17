@@ -29,12 +29,12 @@ end
     @test collect_configs.(cfgs) == reshape([[BitVector((0, 0, 1))], [], [], []], 2, 2)
     @test BranchingTable(cfgs) == BranchingTable([[StaticElementVector(2, [0, 0, 1])]])
     println(BranchingTable(cfgs))
-    @test reduced_alpha_configs(g, [1, 2]) == BranchingTable(cfgs)
+    @test reduced_alpha_configs(TensorNetworkSolver(), g, [1, 2]) == BranchingTable(cfgs)
 end
 
 @testset "satellite" begin
     graph_sat = graph_from_tuples(5, [(1, 2), (2,3), (2,4), (1,3), (3, 4), (4, 5), (2,5)])
-    tbl = reduced_alpha_configs(graph_sat, [1, 4, 5])
+    tbl = reduced_alpha_configs(TensorBranching.TensorNetworkSolver(), graph_sat, [1, 4, 5])
     @test tbl == BranchingTable([
         [StaticElementVector(2, [0, 0, 1, 0, 0]), StaticElementVector(2, [0, 1, 0, 0, 0])],
         [StaticElementVector(2, [1, 0, 0, 1, 0])],

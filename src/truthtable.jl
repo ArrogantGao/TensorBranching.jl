@@ -69,8 +69,11 @@ function Base.show(io::IO, t::BranchingTable{N}) where N
 end
 Base.show(io::IO, ::MIME"text/plain", t::BranchingTable) = show(io, t)
 
+abstract type AbstractMISSolver end
+struct TensorNetworkSolver <: AbstractMISSolver end
+
 # And a combination of the above two procedures.
-function reduced_alpha_configs(graph::SimpleGraph, openvertices::Vector{Int})
+function reduced_alpha_configs(::TensorNetworkSolver, graph::SimpleGraph, openvertices::Vector{Int})
 	configs = _reduced_alpha_configs(graph, openvertices)
     return BranchingTable(configs)
 end

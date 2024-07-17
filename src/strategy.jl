@@ -1,20 +1,20 @@
-abstract type AbsractBranching end
+abstract type AbstractBranching end
 abstract type AbstractMeasurement end
 abstract type AbstractVertexSelector end
 abstract type AbstractTruthFilter end
 
 """
-    struct NaiveBranching <: AbsractBranching
+    struct NaiveBranching <: AbstractBranching
 A struct representing the NaiveBranching branching strategy.
 """
-struct NaiveBranching <: AbsractBranching end
+struct NaiveBranching <: AbstractBranching end
 
 function impl_strategy(g::SimpleGraph, vertices::Vector{Int}, tbl::BranchingTable{N}, strategy::NaiveBranching, measurement::AbstractMeasurement) where{N}
     return Branches([Branch(Clause(bmask(BitStr{N, Int}, 1:N), BitStr(first(x))), vertices, g, measurement) for x in tbl.table])
 end
 
 """
-    struct SetCoverBranching <: AbsractBranching
+    struct SetCoverBranching <: AbstractBranching
 
 A struct representing a branching strategy for set cover problems.
 
@@ -26,7 +26,7 @@ A struct representing a branching strategy for set cover problems.
 - `SetCoverBranching(max_itr::Int)`: Constructs a `SetCoverBranching` object with the specified `max_itr` value.
 
 """
-struct SetCoverBranching <: AbsractBranching 
+struct SetCoverBranching <: AbstractBranching 
     max_itr::Int
     SetCoverBranching() = new(3)
     SetCoverBranching(max_itr::Int) = new(max_itr)
