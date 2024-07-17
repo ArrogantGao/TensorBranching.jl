@@ -32,11 +32,14 @@ function collect_configs(cfg::CountingTropical{<:Real, <:ConfigEnumerator}, symb
 end
 
 """
-    BranchingTable{N, C}
+    BranchingTable{INT}
 
-A table of branching configurations. The table is a vector of vectors of `StaticBitVector{N, C}`. Type parameters are:
-- `N`: The number of bits in the bit vector.
-- `C`: The number of integers as the storage.
+A table of branching configurations. The table is a vector of vectors of `INT`. Type parameters are:
+- `INT`: The number of integers as the storage.
+
+# Fields
+- `bit_length::Int`: The length of the bit string.
+- `table::Vector{Vector{INT}}`: The table of bitstrings used for branching.
 
 ### Examples
 ```jldoctest
@@ -44,24 +47,26 @@ julia> graph_sat = graph_from_tuples(3, [(1, 2), (2, 3), (1, 3)])
 {3, 3} undirected simple Int64 graph
 
 julia> tbl = reduced_alpha_configs(TensorNetworkSolver(), graph_sat, [1, 2])
-BranchingTable{N}
+BranchingTable{LongLongUInt{1}}:
 001
 ```
 
 To cover the branching table, at least one clause in each row must be satisfied.
 """
-struct BranchingTable{N, C}
-    table::Vector{Vector{StaticBitVector{N, C}}}
+struct BranchingTable{INT}
+    bit_length::Int
+    table::Vector{Vector{INT}}
 end
-function BranchingTable(arr::AbstractArray{<:CountingTropical{<:Real, <:ConfigEnumerator}})
-    return BranchingTable(filter(!isempty, vec(map(collect_configs, arr))))
+function BranchingTable(arr::AbstractArray{<:CountingTropical{<:Real, <:ConfigEnumerator{N}}}) where N
+    return BranchingTable(N, filter(!isempty, vec(map(collect_configs, arr))))
 end
 function BranchingTable(n::Int, arr::AbstractVector{<:AbstractVector})
-    return BranchingTable([StaticBitVector(n, x) for x in arr])
+    return BranchingTable(n, [longlongint(n, x) for x in arr])
 end
+nbits(t::BranchingTable) = t.bit_length
 Base.:(==)(t1::BranchingTable, t2::BranchingTable) = all(x -> Set(x[1]) == Set(x[2]), zip(t1.table, t2.table))
-function Base.show(io::IO, t::BranchingTable{N}) where N
-    println(io, "BranchingTable{N}")
+function Base.show(io::IO, t::BranchingTable{INT}) where INT
+    println(io, "BranchingTable{$INT}")
     for (i, row) in enumerate(t.table)
         print(io, join(["$r" for r in row], ", "))
         i < length(t.table) && println(io)
@@ -78,10 +83,10 @@ function reduced_alpha_configs(::TensorNetworkSolver, graph::SimpleGraph, openve
     return BranchingTable(configs)
 end
 
-struct DNF{N, T}
-    clauses::Vector{Clause{N, T}}
+struct DNF{INT}
+    clauses::Vector{Clause{INT}}
 end
-DNF(c::Clause{N, T}, cs::Clause{N, T}...) where {N, T} = DNF([c, cs...])
+DNF(c::Clause{INT}, cs::Clause{INT}...) where {INT} = DNF([c, cs...])
 Base.:(==)(x::DNF, y::DNF) = x.clauses == y.clauses
 Base.length(x::DNF) = length(x.clauses)
 
@@ -93,6 +98,7 @@ function covered_by(s::StaticBitVector, dnf::DNF)
     any(c->covered_by(s.data[1], c), dnf.clauses)
 end
 
-function Tbl2BitStrs(tbl::BranchingTable{N}) where N
-    return [BitStr.(x) for x in tbl.table]
+function tbl2longlongint(tbl::BranchingTable{INT}) where INT
+    return [long_long_uint.(x) for x in tbl.table]
 end
+long_long_uint(v::AbstractVector) = LongLongUInt(StaticBitVector(v))

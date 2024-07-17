@@ -9,8 +9,8 @@ A struct representing the NaiveBranching branching strategy.
 """
 struct NaiveBranching <: AbstractBranching end
 
-function impl_strategy(g::SimpleGraph, vertices::Vector{Int}, tbl::BranchingTable{N}, strategy::NaiveBranching, measurement::AbstractMeasure) where{N}
-    return Branches([Branch(Clause(bmask(BitStr{N, Int}, 1:N), BitStr(first(x))), vertices, g, measurement) for x in tbl.table])
+function impl_strategy(g::SimpleGraph, vertices::Vector{Int}, tbl::BranchingTable{INT}, ::NaiveBranching, measurement::AbstractMeasure) where INT
+    return Branches([Branch(Clause(bmask(INT, 1:nbits(tbl)), INT(first(x))), vertices, g, measurement) for x in tbl.table])
 end
 
 """
@@ -32,7 +32,7 @@ struct SetCoverBranching <: AbstractBranching
     SetCoverBranching(max_itr::Int) = new(max_itr)
 end
 
-function impl_strategy(g::SimpleGraph, vertices::Vector{Int}, tbl::BranchingTable{N}, strategy::SetCoverBranching, measurement::AbstractMeasure) where{N}
+function impl_strategy(g::SimpleGraph, vertices::Vector{Int}, tbl::BranchingTable{INT}, strategy::SetCoverBranching, measurement::AbstractMeasure) where INT
     return setcover_strategy(tbl, vertices, g, strategy.max_itr, measurement)
 end
 
@@ -40,7 +40,7 @@ struct NumOfVertices <: AbstractMeasure end # each vertex is counted as 1
 
 measure(g::SimpleGraph, ::NumOfVertices) = nv(g)
 
-function size_reduced(g::SimpleGraph, vertices::Vector{Int}, clause::Clause{N, T}, measurement::NumOfVertices) where{N, T}
+function size_reduced(g::SimpleGraph, vertices::Vector{Int}, clause::Clause{T}, measurement::NumOfVertices) where{T}
     return length(removed_vertices(vertices, g, clause))
 end
 
@@ -60,7 +60,7 @@ function measure(g::SimpleGraph, ::D3Measure)
     end
 end
 
-function size_reduced(g::SimpleGraph, vertices::Vector{Int}, clause::Clause{N, T}, measurement::D3Measure) where{N, T}
+function size_reduced(g::SimpleGraph, vertices::Vector{Int}, clause::Clause{T}, measurement::D3Measure) where{T}
     return measure(g, measurement) - measure(induced_subgraph(g, setdiff(1:nv(g), removed_vertices(vertices, g, clause)))[1], measurement)
 end
 
@@ -94,15 +94,15 @@ end
 
 struct NoFilter <: AbstractTruthFilter end
 
-filt(g::SimpleGraph, vertices::Vector{Int}, openvertices::Vector{Int}, tbl::BranchingTable{N, C}, ::NoFilter) where{N, C} = tbl
+filt(g::SimpleGraph, vertices::Vector{Int}, openvertices::Vector{Int}, tbl::BranchingTable{INT}, ::NoFilter) where{INT} = tbl
 
 struct EnvFilter <: AbstractTruthFilter end
 
-function filt(g::SimpleGraph, vertices::Vector{Int}, openvertices::Vector{Int}, tbl::BranchingTable{N, C}, ::EnvFilter) where{N, C}
+function filt(g::SimpleGraph, vertices::Vector{Int}, openvertices::Vector{Int}, tbl::BranchingTable{INT}, ::EnvFilter) where INT
     ns = neighbors(g, vertices)
     so = Set(openvertices)
 
-    new_table = Vector{Vector{StaticBitVector{N, C}}}()
+    new_table = Vector{Vector{INT}}()
 
     open_vertices_1 = [Int[] for i in 1:length(tbl.table)]
     neibs_0 = Set{Int}[]
@@ -124,7 +124,7 @@ function filt(g::SimpleGraph, vertices::Vector{Int}, openvertices::Vector{Int}, 
                 pink_block = setdiff(neibs_0[i], neibs_0[j])
                 sg_pink, sg_vec = induced_subgraph(g, collect(pink_block))
                 mis_pink = mis2(EliminateGraph(sg_pink))
-                if (count_ones(BitStr(tbl.table[i][1])) + mis_pink ≤ count_ones(BitStr(tbl.table[j][1]))) && (!iszero(mis_pink))
+                if (count_ones(INT(tbl.table[i][1])) + mis_pink ≤ count_ones(LongLongUInt(tbl.table[j][1]))) && (!iszero(mis_pink))
                     flag = false
                     break
                 end
@@ -144,7 +144,7 @@ struct Branch{T}
     mis::Int
 end
 
-function Branch(clause::Clause{N, C}, vertices::Vector{Int}, g::SimpleGraph, measurement::AbstractMeasure) where {N, C}
+function Branch(clause::Clause{INT}, vertices::Vector{Int}, g::SimpleGraph, measurement::AbstractMeasure) where {INT}
     vertices_removed = removed_vertices(vertices, g, clause)
     sr = size_reduced(g, vertices, clause, measurement)
     return Branch(vertices_removed, sr, count_ones(clause.val))

@@ -1,10 +1,10 @@
-function all_clauses_naive(bss::AbstractVector{Vector{BitStr{N, T}}}) where{N, T}
-    allclauses = Vector{Clause{N, T}}()
+function all_clauses_naive(n::Int, bss::AbstractVector{Vector{INT}}) where INT
+    allclauses = Vector{Clause{INT}}()
     for ids in Iterators.product([0:length(bss[i]) for i in 1:length(bss)]...)
         masks = [ids...]
         cbs = [bss[i][masks[i]] for i in 1:length(bss) if masks[i] != 0]
         if length(cbs) > 0
-            ccbs = clause(cbs)
+            ccbs = clause(n::Int, cbs)
             if !(ccbs in allclauses) && (ccbs.mask != 0)
                 push!(allclauses, ccbs)
             end
@@ -19,18 +19,18 @@ end
 Compute the subcovers for a given set of bit strings by search all possible clauses.
 
 # Arguments
-- `bs::Union{Vector{BitStr{N, T}}, AbstractVector{Vector{BitStr{N, T}}}}`: The set of bit strings.
+- `bs::Union{Vector{INT}, AbstractVector{Vector{INT}}}`: The set of bit strings.
 - `vertices::Vector{Int}`: The vertices.
 - `g::SimpleGraph`: The graph.
 - `use_rv::Bool`: A flag indicating whether to use the number of vertices removed.
 
 # Returns
-- `allcovers::Vector{SubCover{N, T}}`: The computed subcovers.
+- `allcovers::Vector{SubCover{INT}}`: The computed subcovers.
 
 """
-function subcovers_naive(bs::Union{Vector{BitStr{N, T}}, AbstractVector{Vector{BitStr{N, T}}}}, vertices::Vector{Int}, g::SimpleGraph, measurement::AbstractMeasure) where{N, T}
-    allclauses = all_clauses_naive(bs)
-    allcovers = Vector{SubCover{N, T}}()
+function subcovers_naive(n::Int, bs::Union{Vector{INT}, AbstractVector{Vector{INT}}}, vertices::Vector{Int}, g::SimpleGraph, measurement::AbstractMeasure) where {INT}
+    allclauses = all_clauses_naive(n, bs)
+    allcovers = Vector{SubCover{INT}}()
     for (i, c) in enumerate(allclauses)
         ids = covered_items(bs, c)
 
@@ -42,12 +42,12 @@ function subcovers_naive(bs::Union{Vector{BitStr{N, T}}, AbstractVector{Vector{B
 end
 
 """
-    subcovers(bss::AbstractVector{Vector{BitStr{N, T}}}, vertices::Vector{Int}, g::SimpleGraph, use_rv::Bool) where {N, T}
+    subcovers(bss::AbstractVector{Vector{INT}}, vertices::Vector{Int}, g::SimpleGraph, use_rv::Bool) where {INT}
 
 Compute the subcovers of a set of bit strings by iteratively gathering clauses.
 
 # Arguments
-- `bss::AbstractVector{Vector{BitStr{N, T}}}`: A vector of vectors of bit strings.
+- `bss::AbstractVector{Vector{INT}}`: A vector of vectors of bit strings.
 - `vertices::Vector{Int}`: A vector of integers representing vertices.
 - `g::SimpleGraph`: A simple graph.
 - `use_rv::Bool`: A boolean indicating whether to use the number of vertices removed.
@@ -56,10 +56,11 @@ Compute the subcovers of a set of bit strings by iteratively gathering clauses.
 - `allcovers::Vector{SubCover}`: A vector of `SubCover` objects representing the subcovers.
 
 """
-function subcovers(bss::AbstractVector{Vector{BitStr{N, T}}}, vertices::Vector{Int}, g::SimpleGraph, measurement::AbstractMeasure) where{N, T}
+function subcovers(bss::AbstractVector{Vector{INT}}, vertices::Vector{Int}, g::SimpleGraph, measurement::AbstractMeasure) where {INT}
+    n = nv(g)
     bs = vcat(bss...)
-    all_clauses = Set{Clause{N, T}}()
-    temp_clauses = [Clause(bmask(BitStr{N, T}, 1:length(bs[i])), bs[i]) for i in 1:length(bs)]
+    all_clauses = Set{Clause{INT}}()
+    temp_clauses = [Clause(bmask(INT, 1:length(bs[i])), bs[i]) for i in 1:length(bs)]
     while !isempty(temp_clauses)
         c = pop!(temp_clauses)
         if !(c in all_clauses)
@@ -68,7 +69,7 @@ function subcovers(bss::AbstractVector{Vector{BitStr{N, T}}}, vertices::Vector{I
             for i in 1:length(bss)
                 if i ∉ idc                
                     for b in bss[i]
-                        c_new = gather2(c, Clause(bmask(BitStr{N, T}, 1:length(b)), b))
+                        c_new = gather2(n, c, Clause(bmask(INT, 1:length(b)), b))
                         if (c_new != c) && c_new.mask != 0
                             push!(temp_clauses, c_new)
                         end
@@ -83,6 +84,6 @@ function subcovers(bss::AbstractVector{Vector{BitStr{N, T}}}, vertices::Vector{I
     return allcovers
 end
 
-function subcovers(tbl::BranchingTable{N, C}, vertices::Vector{Int}, g::SimpleGraph, measurement::AbstractMeasure) where{N, C}
-    return subcovers(Tbl2BitStrs(tbl), vertices, g, measurement)
+function subcovers(tbl::BranchingTable{INT}, vertices::Vector{Int}, g::SimpleGraph, measurement::AbstractMeasure) where{INT}
+    return subcovers(tbl2longlongint(tbl), vertices, g, measurement)
 end
