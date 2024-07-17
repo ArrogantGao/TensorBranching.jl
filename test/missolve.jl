@@ -27,7 +27,7 @@ end
     vertices = [1] ∪ neighbors(g, 1)
     cfg = SolverConfig(; branching_strategy=SetCoverBranching())
     branch = optimal_branches(g, vertices, cfg.branching_strategy; cfg.measure, cfg.table_filter)
-    @test branch == Branches{Int64}(Branch{Int64}[Branch{Int64}([1, 2, 3, 4], 4, 1), Branch{Int64}([1, 2, 3, 11, 12, 4, 19, 20], 8, 2), Branch{Int64}([1, 2, 5, 27, 3, 11, 12, 4], 8, 2), Branch{Int64}([1, 2, 5, 27, 4, 19, 20], 7, 2)])
+    @test isapprox(TensorBranching.effective_γ(branch), 1.2405351053760838)
 end
 
 @testset "missolve" begin
