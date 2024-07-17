@@ -43,7 +43,7 @@ A table of branching configurations. The table is a vector of vectors of `Static
 julia> graph_sat = graph_from_tuples(3, [(1, 2), (2, 3), (1, 3)])
 {3, 3} undirected simple Int64 graph
 
-julia> tbl = reduced_alpha_configs(graph_sat, [1, 2])
+julia> tbl = reduced_alpha_configs(TensorNetworkSolver(), graph_sat, [1, 2])
 BranchingTable{N}
 001
 ```
@@ -69,8 +69,11 @@ function Base.show(io::IO, t::BranchingTable{N}) where N
 end
 Base.show(io::IO, ::MIME"text/plain", t::BranchingTable) = show(io, t)
 
+abstract type AbstractMISSolver end
+struct TensorNetworkSolver <: AbstractMISSolver end
+
 # And a combination of the above two procedures.
-function reduced_alpha_configs(graph::SimpleGraph, openvertices::Vector{Int})
+function reduced_alpha_configs(::TensorNetworkSolver, graph::SimpleGraph, openvertices::Vector{Int})
 	configs = _reduced_alpha_configs(graph, openvertices)
     return BranchingTable(configs)
 end
@@ -92,75 +95,4 @@ end
 
 function Tbl2BitStrs(tbl::BranchingTable{N}) where N
     return [BitStr.(x) for x in tbl.table]
-end
-
-# vs a subgraph, return N(vs)
-function Graphs.neighbors(g::SimpleGraph, vs::Vector{Int})
-    set_vs = Set(vs)
-    set_neighbors = Set{Int}()
-    for v in vs
-        neighbors_v = neighbors(g, v)
-        for n in neighbors_v
-            if n ∉ set_vs
-                push!(set_neighbors, n)
-            end
-        end
-    end
-    return set_neighbors
-end
-
-
-"""
-    env_filter(tbl::BranchingTable{N, C}, g::SimpleGraph, vertices::Vector{Int}, openvertices::Vector{Int}) -> BranchingTable
-
-Filter the given `tbl` based on the environment of the vertices.
-
-# Arguments
-- `tbl::BranchingTable{N, C}`: The branching table to filter.
-- `g::SimpleGraph`: The graph representing the environment.
-- `vertices::Vector{Int}`: The vertices to consider.
-- `openvertices::Vector{Int}`: The open vertices.
-
-# Returns
-A new `BranchingTable` object containing the filtered rows.
-
-"""
-function env_filter(tbl::BranchingTable{N, C}, g::SimpleGraph, vertices::Vector{Int}, openvertices::Vector{Int}) where {N, C}
-    ns = neighbors(g, vertices)
-    so = Set(openvertices)
-
-    new_table = Vector{Vector{StaticBitVector{N, C}}}()
-
-    open_vertices_1 = [Int[] for i in 1:length(tbl.table)]
-    neibs_0 = Set{Int}[]
-    for i in 1:length(tbl.table)
-        row = tbl.table[i]
-        x = row[1]
-        for n in 1:length(x)
-            if (x[n] == 1) && (vertices[n] ∈ so)
-                push!(open_vertices_1[i], vertices[n])
-            end
-        end
-        push!(neibs_0, setdiff(ns, neighbors(g, open_vertices_1[i]) ∩ ns))
-    end
-
-    for i in 1:length(tbl.table)
-        flag = true
-        for j in 1:length(tbl.table)
-            if i != j
-                pink_block = setdiff(neibs_0[i], neibs_0[j])
-                sg_pink, sg_vec = induced_subgraph(g, collect(pink_block))
-                mis_pink = mis2(EliminateGraph(sg_pink))
-                if (count_ones(BitStr(tbl.table[i][1])) + mis_pink ≤ count_ones(BitStr(tbl.table[j][1]))) && (!iszero(mis_pink))
-                    flag = false
-                    break
-                end
-            end
-        end
-        if flag
-            push!(new_table, tbl.table[i])
-        end
-    end
-
-    return BranchingTable(new_table)
 end

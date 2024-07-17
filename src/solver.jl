@@ -1,159 +1,119 @@
-abstract type BranchingStrategy end
-
 """
-    struct NaiveBranching <: BranchingStrategy
-A struct representing the NaiveBranching branching strategy.
-"""
-struct NaiveBranching <: BranchingStrategy end
+    SolverConfig{ST<:AbstractMISSolver, BT<:AbstractBranching, MT<:AbstractMeasure, VT<:AbstractVertexSelector, FT<:AbstractTruthFilter}
 
-"""
-    struct SetCoverBranching <: BranchingStrategy
-
-A struct representing a branching strategy for set cover problems.
+The configuration for the optimal branching MIS solver.
 
 # Fields
-- `max_itr::Int`: The maximum number of iterations.
-
-# Constructors
-- `SetCoverBranching()`: Constructs a `SetCoverBranching` object with a default value of `2` for `max_itr`.
-- `SetCoverBranching(max_itr::Int)`: Constructs a `SetCoverBranching` object with the specified `max_itr` value.
-
+- `table_solver::ST`: the MIS solver, e.g., `TensorNetworkSolver()`
+- `branching_strategy::BT`: the branching strategy, e.g., `NaiveBranching()`, `SetCoverBranching()`
+- `measurement::MT`: the measurement for the branching strategy, e.g., `NumOfVertices()`, `D3Measure()`
+- `vertex_selector::VT`: the vertex selector, e.g., `MinBoundarySelector(2)`, `ManualSelector([1, 2, 3])`
+- `table_filter::FT`: the truth filter, e.g., `EnvFilter()`, `NoFilter()`
 """
-struct SetCoverBranching <: BranchingStrategy 
-    max_itr::Int
-    SetCoverBranching() = new(2)
-    SetCoverBranching(max_itr::Int) = new(max_itr)
+Base.@kwdef struct SolverConfig{ST<:AbstractMISSolver, BT<:AbstractBranching, MT<:AbstractMeasure, VT<:AbstractVertexSelector, FT<:AbstractTruthFilter}
+    table_solver::ST = TensorNetworkSolver()
+    branching_strategy::BT = NaiveBranching()
+    measurement::MT = NumOfVertices()
+    vertex_selector::VT = MinBoundarySelector(2)
+    table_filter::FT = EnvFilter()
 end
 
 """
-    missolve(g::SimpleGraph; show_count = false, strategy::BranchingStrategy = NaiveBranching(), kneighbor::Int = 2, use_rv::Bool = true)
+    missolve(g::SimpleGraph, config::SolverConfig; show_count = false)
 
-Solves the maximum independent set (MIS) problem for a given graph `g` using a specified branching strategy.
+Solve the maximum independent set problem for the given graph and configuration.
 
-## Arguments
-- `g::SimpleGraph`: The input graph.
-- `show_count::Bool = false`: Whether to return the count of iterations performed during the solving process.
-- `strategy::BranchingStrategy = NaiveBranching()`: The branching strategy to use. Defaults to `NaiveBranching()`.
-- `kneighbor::Int = 2`: The number of neighbors to consider during the branching process. Defaults to 2.
-- `use_rv::Bool = true`: Whether to use number of removed vertices during the branching process. Defaults to true.
-- `use_filter::Bool = true`: Whether to use the environment filter. Defaults to true.
+# Arguments
+- `g::SimpleGraph`: the input graph
+- `config::SolverConfig`: the solver configuration
 
-## Returns
-- If `show_count` is false, returns the maximum independent set (MIS) of the graph `g`.
-- If `show_count` is true, returns a tuple `(mis, count)` where `mis` is the maximum independent set (MIS) of the graph `g` and `count` is the number of iterations performed during the solving process.
+# Keyword Arguments
+- `show_count::Bool`: whether to show the count of the MIS
 """
-function missolve(g::SimpleGraph; show_count = false, strategy::BranchingStrategy = NaiveBranching(), kneighbor::Int = 2, use_rv::Bool = true, use_filter::Bool = true)
-    mis = mis_solver(g, strategy, kneighbor, use_rv, use_filter)
+function missolve(g::SimpleGraph, config::SolverConfig; show_count = false)
+    mis = mis_solver(g, config)
     return show_count ? (mis.mis, mis.count) : mis.mis
 end
 
-function rv(vertices::Vector{Int}, g::SimpleGraph, clause::Clause{N}) where N
-    removed_vertices = Int[]
-    for (k, v) in enumerate(vertices)
-        if readbit(clause.mask, k) == 1
-            push!(removed_vertices, v)
-            if readbit(clause.val, k) == 1
-                append!(removed_vertices, neighbors(g, v))
-            end
-        end
-    end
-    return unique!(removed_vertices)
-end
-
-function mis_solver(g::SimpleGraph, strategy::BranchingStrategy, kneighbor::Int, use_rv::Bool, use_filter::Bool)
+function mis_solver(g::SimpleGraph, config::SolverConfig)
     dg = degree(g)
     if nv(g) == 0 || nv(g) == 1
         return CountingMIS(nv(g))
     elseif (0 ∈ dg) || (1 ∈ dg)
         v = findfirst(x -> (x==0)||(x==1), dg)
-        return 1 + mis_solver(induced_subgraph(g, setdiff(1:nv(g), v ∪ neighbors(g, v)))[1], strategy, kneighbor, use_rv, use_filter)
+        return 1 + mis_solver(induced_subgraph(g, setdiff(1:nv(g), v ∪ neighbors(g, v)))[1], config)
+    elseif (2 ∈ dg)
+        v = findfirst(x -> (x==2), dg)
+        return folding(g, v, config)
     elseif maximum(dg) ≥ 6
         v = argmax(dg)
-        return max(1 + mis_solver(induced_subgraph(g, setdiff(1:nv(g), v ∪ neighbors(g, v)))[1], strategy, kneighbor, use_rv, use_filter), mis_solver(induced_subgraph(g, setdiff(1:nv(g), v))[1], strategy, kneighbor, use_rv, use_filter))
+        return max(1 + mis_solver(induced_subgraph(g, setdiff(1:nv(g), v ∪ neighbors(g, v)))[1], config), mis_solver(induced_subgraph(g, setdiff(1:nv(g), v))[1], config))
     else
-        vertices, openvertices, dnf = optimal_branching_dnf(g, strategy, kneighbor, use_rv, use_filter)
-        @assert !isempty(vertices)
+        vertices = select_vertex(g, config.vertex_selector)
+        branches = optimal_branches(g, vertices, config.branching_strategy; config.measurement, config.table_filter, config.table_solver)
 
-        mis_count = Vector{CountingMIS}(undef, length(dnf.clauses))
+        mis_count = Vector{CountingMIS}(undef, length(branches.branches))
         
-        @threads for i in 1:length(dnf.clauses)
-            clause = dnf.clauses[i]
-            removed_vertices = rv(vertices, g, clause)
+        @threads for i in 1:length(branches.branches)
+            rvs = branches.branches[i].vertices_removed
             gi = copy(g)
-            rem_vertices!(gi, removed_vertices)
-            @assert !isempty(removed_vertices)
-            mis_count[i] = mis_solver(gi, strategy, kneighbor, use_rv, use_filter) + count_ones(clause.val)
+            rem_vertices!(gi, rvs)
+            # @assert !isempty(rvs)
+            mis_count[i] = mis_solver(gi, config) + branches.branches[i].mis
         end
-        max_mis = max(mis_count...)
+        max_mis = maximum(mis_count)
 
         return max_mis
     end
 end
 
-function neighbor_cover(g::SimpleGraph, v::Int, k::Int)
-    @assert k >= 0
-    vertices = [v]
-    for _ = 1:k
-        vertices = union(vertices, (neighbors(g, w) for w in vertices)...)
-    end
-    openvertices = [v for v in vertices if !all(x->x ∈ vertices, neighbors(g, v))]
-    return vertices, openvertices
-end
-
 """
-    optimal_branching_dnf(g::SimpleGraph, strategy::BranchingStrategy, kneighbor::Int, use_rv::Bool)
-
-Compute the optimal branching in a directed acyclic graph (DAG) using a specified branching strategy.
+    optimal_branches(g::SimpleGraph, vertices::AbstractVector, strategy::AbstractBranching; measurement::AbstractMeasure = NumOfVertices(), filter::AbstractTruthFilter = NoFilter())
+    
+Find the optimal branches for the given graph and vertices.
 
 # Arguments
-- `g::SimpleGraph`: The input graph.
-- `strategy::BranchingStrategy`: The branching strategy to use.
-- `kneighbor::Int`: The number of neighbors to consider when selecting the branching vertex.
-- `use_rv::Bool`: Whether to use the number of removed vertices during the branching process.
-- `use_filter::Bool`: Whether to use the environment filter.
+- `g::SimpleGraph`: the input graph
+- `vertices::AbstractVector`: the vertices to be considered
+- `strategy::AbstractBranching`: the branching strategy, e.g., `NaiveBranching()`, `SetCoverBranching()`
 
-# Returns
-- `vertices`: The set of vertices selected for the optimal branching.
-- `openvertices`: The set of open vertices in the optimal branching.
-- `impl_strategy`: The implementation strategy used for the optimal branching.
-
+# Keyword Arguments
+- `measurement::AbstractMeasure`: the measurement for the branching strategy, e.g., `NumOfVertices()`, `D3Measure()`
+- `filter::AbstractTruthFilter`: the filter for the branching strategy, e.g., `EnvFilter()`, `NoFilter()`
+- `table_solver`: the solver configuration, e.g., `TensorNetworkSolver()`
 """
-function optimal_branching_dnf(g::SimpleGraph, strategy::BranchingStrategy, kneighbor::Int, use_rv::Bool, use_filter::Bool)
-    # reference: Exaxt Exponential Algorithms by Fomin and Kratsch, chapter 2.3
-    degree_g = degree(g)
-
-    # use minimum boundary instead
-    vs_min = Int[]
-    ovs_min = [1:nv(g)...]
-    for v in 1:nv(g)
-        vs, ovs = neighbor_cover(g, v, kneighbor)
-        if length(ovs) < length(ovs_min)
-            vs_min = vs
-            ovs_min = ovs
-        end
-    end
-    vertices = vs_min
-    openvertices = ovs_min
-
+function optimal_branches(g::SimpleGraph, vertices::AbstractVector, strategy::AbstractBranching;
+            measurement::AbstractMeasure = NumOfVertices(),
+            table_filter::AbstractTruthFilter = NoFilter(),
+            table_solver = TensorNetworkSolver()
+        )
+    # open vertices and induced subgraph
+    openvertices = open_vertices(g, vertices)
     subg, vmap = induced_subgraph(g, vertices)
-    tbl = reduced_alpha_configs(subg, Int[findfirst(==(v), vertices) for v in openvertices])
-    if use_filter
-        filtered_tbl = env_filter(tbl, g, vertices, openvertices)
+
+    # reduced alpha configurations
+    tbl = reduced_alpha_configs(table_solver, subg, Int[findfirst(==(v), vertices) for v in openvertices])
+    # filter out some configurations using the environmental information
+    filtered_tbl = filt(g, vertices, openvertices, tbl, table_filter)
+
+    # implement the branching strategy
+    branches = impl_strategy(g, vertices, filtered_tbl, strategy, measurement)
+    return branches
+end
+
+
+function folding(g::SimpleGraph, v::Int, config::SolverConfig)
+    @assert degree(g, v) == 2
+    a, b = neighbors(g, v)
+    if has_edge(g, a, b)
+        return 1 + mis_solver(induced_subgraph(g, setdiff(1:nv(g), [v, a, b]))[1], config)
     else
-        filtered_tbl = tbl
+        # apply the graph rewrite rule
+        add_vertex!(g)
+        nn = open_neighbors(g, [v, a, b])
+        for n in nn
+            add_edge!(g, nv(g), n)
+        end
+        return 1 + mis_solver(induced_subgraph(g, setdiff(1:nv(g), [v, a, b]))[1], config)
     end
-    return vertices, openvertices, impl_strategy(filtered_tbl, strategy, vertices, g, use_rv)
-end
-
-function impl_strategy(tbl::BranchingTable{N}, strategy::NaiveBranching, vertices, g, use_rv) where N
-    return DNF([Clause(bmask(BitStr{N, Int}, 1:N), BitStr(first(x))) for x in tbl.table])
-end
-
-function impl_strategy(tbl::BranchingTable{N}, strategy::SetCoverBranching, vertices::Vector{Int}, g::SimpleGraph, use_rv::Bool) where N
-    return setcover_strategy(tbl, vertices, g, max_itr = strategy.max_itr, use_rv)
-end
-
-function BitBasis.BitStr(sv::StaticBitVector)
-    @assert length(sv.data) == 1 "bit string too long!"
-    return BitBasis.BitStr{length(sv), Int}(sv.data[1])
 end

@@ -41,7 +41,7 @@ function add_removed!(node::BranchingNode, removed::Vector{Int})
 end
 
 """
-    branching_tree(g::SimpleGraph, strategy::BranchingStrategy, kneighbor::Int, use_rv::Bool)
+    branching_tree(g::SimpleGraph, strategy::AbstractBranching, kneighbor::Int, use_rv::Bool)
 
 Constructs a branching tree based on the given graph `g` using the specified `strategy`.
 The `kneighbor` parameter determines the number of neighbors to consider during branching.
@@ -49,7 +49,7 @@ If `use_rv` is `true`, number of vertex removed is used; otherwise, only count t
 
 # Arguments
 - `g::SimpleGraph`: The input graph.
-- `strategy::BranchingStrategy`: The branching strategy to use.
+- `strategy::AbstractBranching`: The branching strategy to use.
 - `kneighbor::Int`: The number of neighbors to consider during branching.
 - `use_rv::Bool`: Whether to use number of vertex removed.
 
@@ -57,13 +57,13 @@ If `use_rv` is `true`, number of vertex removed is used; otherwise, only count t
 - `tree`: The constructed branching tree.
 - `branch_num`: The number of branches in the tree.
 """
-function branching_tree(g::SimpleGraph, strategy::BranchingStrategy, kneighbor::Int, use_rv::Bool)
+function branching_tree(g::SimpleGraph, strategy::AbstractBranching, kneighbor::Int, use_rv::Bool)
     tree = _branching_tree(g, strategy, kneighbor, use_rv)
     branch_num = length(collect(Leaves(tree)))
     return tree, branch_num
 end
 
-function _branching_tree(g::SimpleGraph, strategy::BranchingStrategy, kneighbor::Int, use_rv::Bool)
+function _branching_tree(g::SimpleGraph, strategy::AbstractBranching, kneighbor::Int, use_rv::Bool)
     dg = degree(g)
     if nv(g) == 0 || nv(g) == 1
         return BranchingNode(g)
@@ -75,8 +75,8 @@ function _branching_tree(g::SimpleGraph, strategy::BranchingStrategy, kneighbor:
         return BranchingNode(g, children=[_branching_tree(induced_subgraph(g, setdiff(1:nv(g), v ∪ neighbors(g, v)))[1], strategy, kneighbor, use_rv), _branching_tree(induced_subgraph(g, setdiff(1:nv(g), v))[1], strategy, kneighbor, use_rv)], removed=[v ∪ neighbors(g, v), [v]])
     end
     
-    vertices, openvertices, dnf = optimal_branching_dnf(g, strategy, kneighbor, use_rv)
-    @assert !isempty(vertices)
+    vertices, openvertices, dnf = optimal_branches(g, strategy, kneighbor, use_rv)
+    # @assert !isempty(vertices)
     
     root = BranchingNode(g)
     for i in 1:length(dnf.clauses)

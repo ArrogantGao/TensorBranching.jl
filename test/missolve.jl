@@ -1,46 +1,32 @@
 using Test, TensorBranching, TensorBranching.Graphs
-using TensorBranching: BitStr, StaticElementVector, optimal_branching_dnf
-using EliminateGraphs: mis1, EliminateGraph
+using TensorBranching: BitStr, StaticElementVector, optimal_branches
+using EliminateGraphs: mis2, EliminateGraph
 
 @testset "branching strategy" begin
     @test BitStr(StaticElementVector(2, [0, 0, 1])) == BitStr{3, Int}(4)
 
     graph = graph_from_tuples(3, [(1, 2), (2, 3), (3, 1)])
-    tbl = reduced_alpha_configs(graph, [1, 2])
+    tbl = reduced_alpha_configs(TensorNetworkSolver(), graph, [1, 2])
     v = [1, 2, 3]
-    @test TensorBranching.impl_strategy(tbl, NaiveBranching(), v, graph, false) == DNF([Clause(bit"111", bit"100")])
-    @test TensorBranching.setcover_strategy(tbl, v, graph, false) == DNF([Clause(bit"111", bit"100")])
+    @test TensorBranching.impl_strategy(graph, v, tbl, NaiveBranching(), NumOfVertices()) == Branches{Int64}(Branch{Int64}[Branch{Int64}([1, 2, 3], 3, 1)])
+    @test TensorBranching.setcover_strategy(tbl, v, graph, 3, NumOfVertices()) == Branches{Int64}(Branch{Int64}[Branch{Int64}([1, 2, 3], 3, 1)])
 end
 
-@testset "optimal_branching_dnf" begin
+@testset "optimal_branches" begin
     petersen = smallgraph(:petersen)
-    vertices, openvertices, dnf = optimal_branching_dnf(petersen, NaiveBranching(), 2, false, false)
-    @test dnf isa DNF
-    @test length(vertices) == 10
-    @test length(openvertices) == 0
-    @test count_ones(dnf.clauses[1].val) == 4
-
-    vertices, openvertices, dnf = optimal_branching_dnf(petersen, SetCoverBranching(), 2, false, false)
-    @test dnf isa DNF
-    @test length(vertices) == 10
-    @test length(openvertices) == 0
-    @test count_ones(dnf.clauses[1].val) == 4
+    for strategy in [NaiveBranching(), SetCoverBranching()], vertex_select in [ManualSelector([1, 2, 3, 4]), MinBoundarySelector(2)], measurement in [NumOfVertices(), D3Measure()], table_filter in [EnvFilter(), NoFilter()]
+        vertices = TensorBranching.select_vertex(petersen, vertex_select)
+        branches = optimal_branches(petersen, vertices, strategy; measurement, table_filter)
+        @test branches isa Branches
+    end
 end
 
 @testset "missolve" begin
     g = smallgraph(:tutte)
-    @test missolve(g) == mis1(EliminateGraph(g))
-    @test missolve(g, strategy=SetCoverBranching()) == mis1(EliminateGraph(g))
-end
-
-@testset "missolve with count" begin
-    g = graph_from_tuples(4, [(1, 2), (1, 3), (1, 4)])
-    @test missolve(g, show_count=true, use_rv = true) == (3, 1)
-    @test missolve(g, show_count=true, use_rv = false) == (3, 1)
-    @test missolve(g, show_count=true, strategy=SetCoverBranching(), use_rv = true) == (3, 1)
-    @test missolve(g, show_count=true, strategy=SetCoverBranching(), use_rv = false) == (3, 1)
-
-    g = smallgraph(:tutte)
-    @test missolve(g, show_count=true)[1] == mis1(EliminateGraph(g))
-    @test missolve(g, show_count=true, strategy=SetCoverBranching())[1] == mis1(EliminateGraph(g))
+    mis = mis2(EliminateGraph(g))
+    for branching_strategy in [NaiveBranching(), SetCoverBranching()], vertex_selector in [MinBoundarySelector(2)], measurement in [NumOfVertices(), D3Measure()], table_filter in [EnvFilter(), NoFilter()]
+        cfg = SolverConfig(; branching_strategy, vertex_selector, measurement, table_filter)
+        @test missolve(g, cfg) == mis
+        @test missolve(g, cfg; show_count=true)[1] == mis
+    end
 end

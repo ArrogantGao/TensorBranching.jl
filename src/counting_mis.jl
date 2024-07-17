@@ -1,6 +1,8 @@
 using EliminateGraphs
 using EliminateGraphs: adjacent45
 
+export counting_mis1, counting_mis2
+
 struct CountingMIS
     mis::Int
     count::Int
@@ -36,6 +38,8 @@ function counting_mis1(eg::EliminateGraph)
         return 1 + neighborcover_mapreduce(y->eliminate(counting_mis1, eg, NeighborCover(y)), max, eg, vmin)
     end
 end
+
+counting_mis1(g::SimpleGraph) = counting_mis1(EliminateGraph(g))
 
 """
     counting_mis2(eg::EliminateGraph)
@@ -155,3 +159,5 @@ function counting_mis2(eg::EliminateGraph)
         end
     end
 end
+
+counting_mis2(g::SimpleGraph) = counting_mis2(EliminateGraph(g))
