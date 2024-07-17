@@ -57,7 +57,7 @@ Compute the subcovers of a set of bit strings by iteratively gathering clauses.
 
 """
 function subcovers(bss::AbstractVector{Vector{INT}}, vertices::Vector{Int}, g::SimpleGraph, measurement::AbstractMeasure) where {INT}
-    n = nv(g)
+    n = length(vertices)
     bs = vcat(bss...)
     all_clauses = Set{Clause{INT}}()
     temp_clauses = [Clause(bmask(INT, 1:n), bs[i]) for i in 1:length(bs)]

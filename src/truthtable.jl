@@ -93,6 +93,6 @@ Base.length(x::DNF) = length(x.clauses)
 function covered_by(t::BranchingTable, dnf::DNF)
     all(x->any(y->covered_by(y, dnf), x), t.table)
 end
-function covered_by(s::StaticBitVector, dnf::DNF)
-    any(c->covered_by(LongLongUInt(s.data), c), dnf.clauses)
+function covered_by(s::Integer, dnf::DNF)
+    any(c->covered_by(s, c), dnf.clauses)
 end

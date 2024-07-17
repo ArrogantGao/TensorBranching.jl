@@ -135,7 +135,7 @@ function filt(g::SimpleGraph, vertices::Vector{Int}, openvertices::Vector{Int}, 
         end
     end
 
-    return BranchingTable(nv(g), new_table)
+    return BranchingTable(nbits(tbl), new_table)
 end
 
 struct Branch{T}

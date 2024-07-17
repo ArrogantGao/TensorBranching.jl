@@ -54,7 +54,7 @@ function mis_solver(g::SimpleGraph, config::SolverConfig)
 
         mis_count = Vector{CountingMIS}(undef, length(branches.branches))
         
-        @threads for i in 1:length(branches.branches)
+        for i in 1:length(branches.branches)
             rvs = branches.branches[i].vertices_removed
             gi = copy(g)
             rem_vertices!(gi, rvs)
