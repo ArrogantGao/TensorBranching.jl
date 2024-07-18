@@ -56,12 +56,16 @@ function measure(g::SimpleGraph, ::D3Measure)
         return 0
     else
         dg = degree(g)
-        return sum(max(d - 2, 0) for d in dg)
+        return Int(sum(max(d - 2, 0) for d in dg))
     end
 end
 
 function size_reduced(g::SimpleGraph, vertices::Vector{Int}, clause::Clause{T}, m::D3Measure) where{T}
     return measure(g, m) - measure(induced_subgraph(g, setdiff(1:nv(g), removed_vertices(vertices, g, clause)))[1], m)
+end
+
+function size_reduced(g::SimpleGraph, vertices_removed::Vector{Int}, m::AbstractMeasure)
+    return measure(g, m) - measure(induced_subgraph(g, setdiff(1:nv(g), vertices_removed))[1], m)
 end
 
 struct MinBoundarySelector <: AbstractVertexSelector
@@ -129,25 +133,23 @@ function filt(g::SimpleGraph, vertices::Vector{Int}, openvertices::Vector{Int}, 
     return BranchingTable(nbits(tbl), new_table)
 end
 
-struct Branch{T}
+struct Branch
     vertices_removed::Vector{Int}
-    size_reduced::T
     mis::Int
 end
 
 function Branch(clause::Clause{INT}, vertices::Vector{Int}, g::SimpleGraph, measure::AbstractMeasure) where {INT}
     vertices_removed = removed_vertices(vertices, g, clause)
-    sr = size_reduced(g, vertices, clause, measure)
-    return Branch(vertices_removed, sr, count_ones(clause.val))
+    return Branch(vertices_removed, count_ones(clause.val))
 end
 
-struct Branches{T}
-    branches::Vector{Branch{T}}
+struct Branches
+    branches::Vector{Branch}
 end
 
-Base.:(==)(b1::Branch, b2::Branch) = (Set(b1.vertices_removed) == Set(b2.vertices_removed)) && (b1.size_reduced == b2.size_reduced) && (b1.mis == b2.mis)
+Base.:(==)(b1::Branch, b2::Branch) = (Set(b1.vertices_removed) == Set(b2.vertices_removed)) && (b1.mis == b2.mis)
 Base.:(==)(b1::Branches, b2::Branches) = ((b1.branches) == (b2.branches))
 
-function effective_γ(branches::Branches{T}) where{T}
-    return complexity([branches.branches[i].size_reduced for i in 1:length(branches.branches)])
+function effective_γ(branches::Branches, g::SimpleGraph, measure::AbstractMeasure)
+    return complexity([size_reduced(g, b.vertices_removed, measure) for b in branches.branches])
 end
