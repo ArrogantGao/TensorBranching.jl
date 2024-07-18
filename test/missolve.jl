@@ -8,9 +8,9 @@ using EliminateGraphs: mis2, EliminateGraph
     graph = graph_from_tuples(3, [(1, 2), (2, 3), (3, 1)])
     tbl = reduced_alpha_configs(TensorNetworkSolver(), graph, [1, 2])
     v = [1, 2, 3]
-    @test TensorBranching.impl_strategy(graph, v, tbl, NaiveBranching(), NumOfVertices()) == Branches{Int64}(Branch{Int64}[Branch{Int64}([1, 2, 3], 3, 1)])
-    @test TensorBranching.setcover_strategy(tbl, v, graph, 3, NumOfVertices()) == Branches{Int64}(Branch{Int64}[Branch{Int64}([1, 2, 3], 3, 1)])
-    @test TensorBranching.impl_strategy(graph, v, tbl, SetCoverBranching(5), NumOfVertices()) == Branches{Int64}(Branch{Int64}[Branch{Int64}([1, 2, 3], 3, 1)])
+    @test TensorBranching.impl_strategy(graph, v, tbl, NaiveBranching(), NumOfVertices()) == Branches(Branch[Branch([1, 2, 3], 1)])
+    @test TensorBranching.setcover_strategy(tbl, v, graph, 3, NumOfVertices()) == Branches(Branch[Branch([1, 2, 3], 1)])
+    @test TensorBranching.impl_strategy(graph, v, tbl, SetCoverBranching(5), NumOfVertices()) == Branches(Branch[Branch([1, 2, 3], 1)])
 end
 
 @testset "optimal_branches" begin
@@ -27,7 +27,7 @@ end
     vertices = [1] ∪ neighbors(g, 1)
     cfg = SolverConfig(; branching_strategy=SetCoverBranching())
     branch = optimal_branches(g, vertices, cfg.branching_strategy; cfg.measure, cfg.table_filter)
-    @test isapprox(TensorBranching.effective_γ(branch), 1.2405351053760838)
+    @test isapprox(TensorBranching.effective_γ(branch, g, cfg.measure), 1.2405351053760838)
 end
 
 @testset "missolve" begin
