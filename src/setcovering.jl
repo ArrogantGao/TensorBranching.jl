@@ -19,11 +19,11 @@ function complexity(sbranches::Vector{Int})
     return sol.zero[1]
 end
 
-function complexity(subcovers::AbstractVector{SubCover{N, T}}) where{N, T}
+function complexity(subcovers::AbstractVector{SubCover{INT}}) where{INT}
     return complexity([sc.n_rm for sc in subcovers])
 end
 
-function max_id(sub_covers::AbstractVector{SubCover{N, T}}) where{N, T}
+function max_id(sub_covers::AbstractVector{SubCover{INT}}) where{INT}
     m0 = 1
     for sc in sub_covers
         m0 = max(m0, maximum(sc.ids))
@@ -31,7 +31,7 @@ function max_id(sub_covers::AbstractVector{SubCover{N, T}}) where{N, T}
     return m0
 end
 
-function γ0(sub_covers::AbstractVector{SubCover{N, T}}) where{N, T}
+function γ0(sub_covers::AbstractVector{SubCover{INT}}) where{INT}
     n = max_id(sub_covers)
     max_rvs = Int[]
     for i in 1:n
@@ -42,12 +42,12 @@ function γ0(sub_covers::AbstractVector{SubCover{N, T}}) where{N, T}
 end
 
 """
-    cover(sub_covers::AbstractVector{SubCover{N, T}}; max_itr::Int = 2, min_complexity::TF = 1.0) where{N, T, TF}
+    cover(sub_covers::AbstractVector{SubCover{INT}}; max_itr::Int = 2, min_complexity::TF = 1.0) where{N, T, TF}
 
 The `cover` function performs a set covering algorithm on a collection of sub-covers.
 
 ## Arguments
-- `sub_covers::AbstractVector{SubCover{N, T}}`: A collection of sub-covers.
+- `sub_covers::AbstractVector{SubCover{INT}}`: A collection of sub-covers.
 - `max_itr::Int = 2`: The maximum number of iterations to perform.
 - `min_complexity::TF = 1.0`: The minimum complexity threshold.
 
@@ -56,7 +56,7 @@ The `cover` function performs a set covering algorithm on a collection of sub-co
 - `cx`: The complexity of the selected sub-covers.
 
 """
-function cover(sub_covers::AbstractVector{SubCover{N, T}}, max_itr::Int; min_complexity::TF = 1.0) where{N, T, TF}
+function cover(sub_covers::AbstractVector{SubCover{INT}}, max_itr::Int; min_complexity::TF = 1.0) where{INT, TF}
     cx, n = γ0(sub_covers)
     scs_new = copy(sub_covers)
     for i =1:max_itr
@@ -70,7 +70,7 @@ function cover(sub_covers::AbstractVector{SubCover{N, T}}, max_itr::Int; min_com
     end
 end
 
-function LP_setcover(γp::TF, sub_covers::AbstractVector{SubCover{N, T}}, n::Int) where{N, T, TF}
+function LP_setcover(γp::TF, sub_covers::AbstractVector{SubCover{INT}}, n::Int) where{INT, TF}
     fixeds = [sc.n_rm for sc in sub_covers]
     γs = 1 ./ γp .^ fixeds
     nsc = length(sub_covers)
@@ -97,7 +97,7 @@ function LP_setcover(γp::TF, sub_covers::AbstractVector{SubCover{N, T}}, n::Int
     return [value(x[i]) for i in 1:nsc]
 end
 
-function random_pick(xs::Vector{TF}, sub_covers::AbstractVector{SubCover{N, T}}, n::Int) where{N, T, TF}
+function random_pick(xs::Vector{TF}, sub_covers::AbstractVector{SubCover{INT}}, n::Int) where{INT, TF}
     picked = Set{Int}()
     picked_ids = Set{Int}()
     nsc = length(sub_covers)
@@ -118,9 +118,9 @@ function random_pick(xs::Vector{TF}, sub_covers::AbstractVector{SubCover{N, T}},
     return [sub_covers[i] for i in picked]
 end
 
-function setcover_strategy(tbl::BranchingTable{N, C}, vertices::Vector{Int}, g::SimpleGraph, max_itr::Int, measurement::AbstractMeasure) where{N, C}
-    sub_covers = subcovers(tbl, vertices, g, measurement)
+function setcover_strategy(tbl::BranchingTable{INT}, vertices::Vector{Int}, g::SimpleGraph, max_itr::Int, measure::AbstractMeasure) where{INT}
+    sub_covers = subcovers(tbl, vertices, g, measure)
     cov, cx = cover(sub_covers, max_itr)
-    branches = Branches([Branch(sc.clause, vertices, g, measurement) for sc in cov])
+    branches = Branches([Branch(sc.clause, vertices, g, measure) for sc in cov])
     return branches
 end

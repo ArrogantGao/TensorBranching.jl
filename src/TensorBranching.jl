@@ -8,7 +8,7 @@ using Base.Threads
 using Reexport
 @reexport using BitBasis, GenericTensorNetworks.Graphs
 
-export Clause, clause, clauses, SubCover, Tbl2BitStrs
+export Clause, clause, clauses, SubCover
 export subcovers, subcovers_naive, all_clauses_naive
 export LP_setcover, random_pick, cover
 export sbranches, complexity

@@ -9,8 +9,8 @@ A struct representing the NaiveBranching branching strategy.
 """
 struct NaiveBranching <: AbstractBranching end
 
-function impl_strategy(g::SimpleGraph, vertices::Vector{Int}, tbl::BranchingTable{N}, strategy::NaiveBranching, measurement::AbstractMeasure) where{N}
-    return Branches([Branch(Clause(bmask(BitStr{N, Int}, 1:N), BitStr(first(x))), vertices, g, measurement) for x in tbl.table])
+function impl_strategy(g::SimpleGraph, vertices::Vector{Int}, tbl::BranchingTable{INT}, ::NaiveBranching, measure::AbstractMeasure) where INT
+    return Branches([Branch(Clause(bmask(INT, 1:nbits(tbl)), first(x)), vertices, g, measure) for x in tbl.table])
 end
 
 """
@@ -32,15 +32,15 @@ struct SetCoverBranching <: AbstractBranching
     SetCoverBranching(max_itr::Int) = new(max_itr)
 end
 
-function impl_strategy(g::SimpleGraph, vertices::Vector{Int}, tbl::BranchingTable{N}, strategy::SetCoverBranching, measurement::AbstractMeasure) where{N}
-    return setcover_strategy(tbl, vertices, g, strategy.max_itr, measurement)
+function impl_strategy(g::SimpleGraph, vertices::Vector{Int}, tbl::BranchingTable{INT}, strategy::SetCoverBranching, measure::AbstractMeasure) where INT
+    return setcover_strategy(tbl, vertices, g, strategy.max_itr, measure)
 end
 
 struct NumOfVertices <: AbstractMeasure end # each vertex is counted as 1
 
 measure(g::SimpleGraph, ::NumOfVertices) = nv(g)
 
-function size_reduced(g::SimpleGraph, vertices::Vector{Int}, clause::Clause{N, T}, measurement::NumOfVertices) where{N, T}
+function size_reduced(g::SimpleGraph, vertices::Vector{Int}, clause::Clause{T}, m::NumOfVertices) where{T}
     return length(removed_vertices(vertices, g, clause))
 end
 
@@ -56,12 +56,16 @@ function measure(g::SimpleGraph, ::D3Measure)
         return 0
     else
         dg = degree(g)
-        return sum(max(d - 2, 0) for d in dg)
+        return Int(sum(max(d - 2, 0) for d in dg))
     end
 end
 
-function size_reduced(g::SimpleGraph, vertices::Vector{Int}, clause::Clause{N, T}, measurement::D3Measure) where{N, T}
-    return measure(g, measurement) - measure(induced_subgraph(g, setdiff(1:nv(g), removed_vertices(vertices, g, clause)))[1], measurement)
+function size_reduced(g::SimpleGraph, vertices::Vector{Int}, clause::Clause{T}, m::D3Measure) where{T}
+    return measure(g, m) - measure(induced_subgraph(g, setdiff(1:nv(g), removed_vertices(vertices, g, clause)))[1], m)
+end
+
+function size_reduced(g::SimpleGraph, vertices_removed::Vector{Int}, m::AbstractMeasure)
+    return measure(g, m) - measure(induced_subgraph(g, setdiff(1:nv(g), vertices_removed))[1], m)
 end
 
 struct MinBoundarySelector <: AbstractVertexSelector
@@ -85,15 +89,15 @@ end
 
 struct NoFilter <: AbstractTruthFilter end
 
-filt(g::SimpleGraph, vertices::Vector{Int}, openvertices::Vector{Int}, tbl::BranchingTable{N, C}, ::NoFilter) where{N, C} = tbl
+filt(g::SimpleGraph, vertices::Vector{Int}, openvertices::Vector{Int}, tbl::BranchingTable{INT}, ::NoFilter) where{INT} = tbl
 
 struct EnvFilter <: AbstractTruthFilter end
 
-function filt(g::SimpleGraph, vertices::Vector{Int}, openvertices::Vector{Int}, tbl::BranchingTable{N, C}, ::EnvFilter) where{N, C}
+function filt(g::SimpleGraph, vertices::Vector{Int}, openvertices::Vector{Int}, tbl::BranchingTable{INT}, ::EnvFilter) where INT
     ns = neighbors(g, vertices)
     so = Set(openvertices)
 
-    new_table = Vector{Vector{StaticBitVector{N, C}}}()
+    new_table = Vector{Vector{INT}}()
 
     open_vertices_1 = [Int[] for i in 1:length(tbl.table)]
     neibs_0 = Set{Int}[]
@@ -115,7 +119,7 @@ function filt(g::SimpleGraph, vertices::Vector{Int}, openvertices::Vector{Int}, 
                 pink_block = setdiff(neibs_0[i], neibs_0[j])
                 sg_pink, sg_vec = induced_subgraph(g, collect(pink_block))
                 mis_pink = mis2(EliminateGraph(sg_pink))
-                if (count_ones(BitStr(tbl.table[i][1])) + mis_pink ≤ count_ones(BitStr(tbl.table[j][1]))) && (!iszero(mis_pink))
+                if (count_ones(tbl.table[i][1]) + mis_pink ≤ count_ones(tbl.table[j][1])) && (!iszero(mis_pink))
                     flag = false
                     break
                 end
@@ -126,28 +130,26 @@ function filt(g::SimpleGraph, vertices::Vector{Int}, openvertices::Vector{Int}, 
         end
     end
 
-    return BranchingTable(new_table)
+    return BranchingTable(nbits(tbl), new_table)
 end
 
-struct Branch{T}
+struct Branch
     vertices_removed::Vector{Int}
-    size_reduced::T
     mis::Int
 end
 
-function Branch(clause::Clause{N, C}, vertices::Vector{Int}, g::SimpleGraph, measurement::AbstractMeasure) where {N, C}
+function Branch(clause::Clause{INT}, vertices::Vector{Int}, g::SimpleGraph, measure::AbstractMeasure) where {INT}
     vertices_removed = removed_vertices(vertices, g, clause)
-    sr = size_reduced(g, vertices, clause, measurement)
-    return Branch(vertices_removed, sr, count_ones(clause.val))
+    return Branch(vertices_removed, count_ones(clause.val))
 end
 
-struct Branches{T}
-    branches::Vector{Branch{T}}
+struct Branches
+    branches::Vector{Branch}
 end
 
-Base.:(==)(b1::Branch, b2::Branch) = (Set(b1.vertices_removed) == Set(b2.vertices_removed)) && (b1.size_reduced == b2.size_reduced) && (b1.mis == b2.mis)
+Base.:(==)(b1::Branch, b2::Branch) = (Set(b1.vertices_removed) == Set(b2.vertices_removed)) && (b1.mis == b2.mis)
 Base.:(==)(b1::Branches, b2::Branches) = ((b1.branches) == (b2.branches))
 
-function effective_γ(branches::Branches{T}) where{T}
-    return complexity([branches.branches[i].size_reduced for i in 1:length(branches.branches)])
+function effective_γ(branches::Branches, g::SimpleGraph, measure::AbstractMeasure)
+    return complexity([size_reduced(g, b.vertices_removed, measure) for b in branches.branches])
 end
