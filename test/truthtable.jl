@@ -23,7 +23,7 @@ end
     g = graph_from_tuples(3, [(1, 2), (2, 3), (3, 1)])
     @test reduced_alpha(g, [1, 2]) == Tropical.([1 -Inf; -Inf -Inf])
 
-    cfgs = TensorBranching._reduced_alpha_configs(g, [1, 2])
+    cfgs = TensorBranching._reduced_alpha_configs(g, [1, 2], nothing)
     @test count(!iszero, cfgs) == 1
     @test collect_configs.(cfgs, Ref("abc")) == reshape([["c"], String[], String[], String[]], 2, 2)
     @test collect_configs.(cfgs) == reshape([[BitVector((0, 0, 1))], [], [], []], 2, 2)
