@@ -41,16 +41,6 @@ A table of branching configurations. The table is a vector of vectors of `INT`. 
 - `bit_length::Int`: The length of the bit string.
 - `table::Vector{Vector{INT}}`: The table of bitstrings used for branching.
 
-### Examples
-```jldoctest
-julia> graph_sat = graph_from_tuples(3, [(1, 2), (2, 3), (1, 3)])
-{3, 3} undirected simple Int64 graph
-
-julia> tbl = reduced_alpha_configs(TensorNetworkSolver(), graph_sat, [1, 2])
-BranchingTable{LongLongUInt{1}}
-100
-```
-
 To cover the branching table, at least one clause in each row must be satisfied.
 """
 struct BranchingTable{INT <: Integer}

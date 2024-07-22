@@ -46,6 +46,19 @@ function count_mis(g::SimpleGraph, config::SolverConfig)
     return mis.mis, mis.count
 end
 
+"""
+    mis_solver(g::SimpleGraph, config::SolverConfig)
+
+Solves the maximum independent set (MIS) problem for a given graph `g` using a recursive algorithm.
+
+# Arguments
+- `g::SimpleGraph`: The input graph.
+- `config::SolverConfig`: Configuration options for the solver, see `SolverConfig`.
+
+# Returns
+- `max_mis`: The size of the maximum independent set.
+
+"""
 function mis_solver(g::SimpleGraph, config::SolverConfig)
     dg = degree(g)
     if nv(g) == 0 || nv(g) == 1
@@ -69,7 +82,6 @@ function mis_solver(g::SimpleGraph, config::SolverConfig)
             rvs = branches.branches[i].vertices_removed
             gi = copy(g)
             rem_vertices!(gi, rvs)
-            # @assert !isempty(rvs)
             mis_count[i] = mis_solver(gi, config) + branches.branches[i].mis
         end
         max_mis = maximum(mis_count)
