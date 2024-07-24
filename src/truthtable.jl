@@ -13,11 +13,11 @@ function reduced_alpha(g::SimpleGraph, openvertices::Vector{Int})
 	return mis_compactify!(alpha_tensor)
 end
 
-function _reduced_alpha_configs(g::SimpleGraph, openvertices::Vector{Int})
+function _reduced_alpha_configs(g::SimpleGraph, openvertices::Vector{Int}, potential)
 	problem = GenericTensorNetwork(IndependentSet(g); openvertices, optimizer = GreedyMethod(nrepeat=1))
 	alpha_tensor = solve(problem, SizeMax())
 	alpha_configs = solve(problem, ConfigsMax(; bounded=false))
-	reduced_alpha_tensor = mis_compactify!(alpha_tensor)
+	reduced_alpha_tensor = mis_compactify!(alpha_tensor; potential)
 	# set the corresponding entries to 0.
 	alpha_configs[map(iszero, reduced_alpha_tensor)] .= Ref(zero(eltype(alpha_configs)))
 	# post processing
@@ -40,16 +40,6 @@ A table of branching configurations. The table is a vector of vectors of `INT`. 
 # Fields
 - `bit_length::Int`: The length of the bit string.
 - `table::Vector{Vector{INT}}`: The table of bitstrings used for branching.
-
-### Examples
-```jldoctest
-julia> graph_sat = graph_from_tuples(3, [(1, 2), (2, 3), (1, 3)])
-{3, 3} undirected simple Int64 graph
-
-julia> tbl = reduced_alpha_configs(TensorNetworkSolver(), graph_sat, [1, 2])
-BranchingTable{LongLongUInt{1}}
-100
-```
 
 To cover the branching table, at least one clause in each row must be satisfied.
 """
@@ -78,8 +68,8 @@ abstract type AbstractMISSolver end
 struct TensorNetworkSolver <: AbstractMISSolver end
 
 # And a combination of the above two procedures.
-function reduced_alpha_configs(::TensorNetworkSolver, graph::SimpleGraph, openvertices::Vector{Int})
-	configs = _reduced_alpha_configs(graph, openvertices)
+function reduced_alpha_configs(::TensorNetworkSolver, graph::SimpleGraph, openvertices::Vector{Int}, potentials=nothing)
+	configs = _reduced_alpha_configs(graph, openvertices, potentials)
     return BranchingTable(configs)
 end
 

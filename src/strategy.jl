@@ -1,6 +1,36 @@
+"""
+    abstract type AbstractBranching
+
+Abstract type representing a branching strategy. For each branching strategy, a corresponding `impl_strategy` function should be implemented.
+"""
 abstract type AbstractBranching end
+
+
+"""
+    abstract type AbstractMeasure
+
+Abstract type representing a measurement of the size of given graphs. For each measurement, a corresponding `measure` function should be implemented.
+"""
 abstract type AbstractMeasure end
+
+size_reduced(g::SimpleGraph, vertices::Vector{Int}, clause::Clause{T}, m::AbstractMeasure) where{T} = measure(g, m) - measure(induced_subgraph(g, setdiff(1:nv(g), removed_vertices(vertices, g, clause)))[1], m)
+size_reduced(g::SimpleGraph, vertices_removed::Vector{Int}, m::AbstractMeasure) = measure(g, m) - measure(induced_subgraph(g, setdiff(1:nv(g), vertices_removed))[1], m)
+
+"""
+    abstract type AbstractVertexSelector
+
+Abstract type representing a vertex selector, which selects a subset of vertices from a given graph for branching. A corresponding `select_vertex` function should be implemented.
+"""
 abstract type AbstractVertexSelector end
+
+
+"""
+    abstract type AbstractTruthFilter
+
+Abstract type representing a truth filter.
+
+This type serves as a base for defining different truth filter strategies.
+"""
 abstract type AbstractTruthFilter end
 
 """
@@ -40,10 +70,6 @@ struct NumOfVertices <: AbstractMeasure end # each vertex is counted as 1
 
 measure(g::SimpleGraph, ::NumOfVertices) = nv(g)
 
-function size_reduced(g::SimpleGraph, vertices::Vector{Int}, clause::Clause{T}, m::NumOfVertices) where{T}
-    return length(removed_vertices(vertices, g, clause))
-end
-
 """
     D3Measure <: AbstractMeasure
 
@@ -60,14 +86,15 @@ function measure(g::SimpleGraph, ::D3Measure)
     end
 end
 
-function size_reduced(g::SimpleGraph, vertices::Vector{Int}, clause::Clause{T}, m::D3Measure) where{T}
-    return measure(g, m) - measure(induced_subgraph(g, setdiff(1:nv(g), removed_vertices(vertices, g, clause)))[1], m)
-end
+"""
+    struct MinBoundarySelector <: AbstractVertexSelector
 
-function size_reduced(g::SimpleGraph, vertices_removed::Vector{Int}, m::AbstractMeasure)
-    return measure(g, m) - measure(induced_subgraph(g, setdiff(1:nv(g), vertices_removed))[1], m)
-end
+The `MinBoundarySelector` struct represents a strategy for selecting a subgraph with the minimum number of open vertices by k-layers of neighbors.
 
+# Fields
+- `k::Int`: The number of layers of neighbors to consider when selecting the subgraph.
+
+"""
 struct MinBoundarySelector <: AbstractVertexSelector
     k::Int # select the subgraph with minimum open vertices by k-layers of neighbors
 end
@@ -91,8 +118,15 @@ struct NoFilter <: AbstractTruthFilter end
 
 filt(g::SimpleGraph, vertices::Vector{Int}, openvertices::Vector{Int}, tbl::BranchingTable{INT}, ::NoFilter) where{INT} = tbl
 
+"""
+    struct EnvFilter <: AbstractTruthFilter
+A struct representing an environment filter, using the information of the environment to filter out some configurations which can not reach the optimal mis solution.
+"""
 struct EnvFilter <: AbstractTruthFilter end
 
+# consider two different branching rule (A, and B) applied on the same set of vertices, with open vertices ovs.
+# the neighbors of 1 vertices in A is label as NA1, and the neighbors of 1 vertices in B is label as NB1, and the pink_block is the set of vertices that are not in NB1 but in NA1.
+# once mis(A) + mis(pink_block) ≤ mis(B), then A is not a good branching rule, and should be removed.
 function filt(g::SimpleGraph, vertices::Vector{Int}, openvertices::Vector{Int}, tbl::BranchingTable{INT}, ::EnvFilter) where INT
     ns = neighbors(g, vertices)
     so = Set(openvertices)
@@ -133,6 +167,16 @@ function filt(g::SimpleGraph, vertices::Vector{Int}, openvertices::Vector{Int}, 
     return BranchingTable(nbits(tbl), new_table)
 end
 
+"""
+    struct Branch
+
+A struct representing a branching strategy.
+
+# Fields
+- `vertices_removed::Vector{Int}`: A vector of integers representing the vertices removed in the branching strategy.
+- `mis::Int`: An integer representing the maximum independent set (MIS) size of the branching strategy.
+
+"""
 struct Branch
     vertices_removed::Vector{Int}
     mis::Int
@@ -143,6 +187,15 @@ function Branch(clause::Clause{INT}, vertices::Vector{Int}, g::SimpleGraph, meas
     return Branch(vertices_removed, count_ones(clause.val))
 end
 
+"""
+    struct Branches
+
+A struct representing a collection of branches.
+
+# Fields
+- `branches::Vector{Branch}`: A vector of `Branch` objects.
+
+"""
 struct Branches
     branches::Vector{Branch}
 end
@@ -150,6 +203,22 @@ end
 Base.:(==)(b1::Branch, b2::Branch) = (Set(b1.vertices_removed) == Set(b2.vertices_removed)) && (b1.mis == b2.mis)
 Base.:(==)(b1::Branches, b2::Branches) = ((b1.branches) == (b2.branches))
 
+"""
+    effective_γ(branches::Branches, g::SimpleGraph, measure::AbstractMeasure)
+
+Compute the effective γ value for a set of branches in a graph under a given measure.
+
+This function calculates the effective γ value for a given set of branches in a graph. The effective γ value is a measure of complexity that takes into account the size reduction achieved by removing vertices from the graph.
+
+# Arguments
+- `branches::Branches`: The set of branches for which to calculate the effective γ value.
+- `g::SimpleGraph`: The graph for which to calculate the effective γ value.
+- `measure::AbstractMeasure`: The measure used to calculate the size reduction.
+
+# Returns
+- The effective γ value for the set of branches.
+
+"""
 function effective_γ(branches::Branches, g::SimpleGraph, measure::AbstractMeasure)
     return complexity([size_reduced(g, b.vertices_removed, measure) for b in branches.branches])
 end

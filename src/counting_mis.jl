@@ -3,6 +3,31 @@ using EliminateGraphs: adjacent45
 
 export counting_mis1, counting_mis2
 
+"""
+    struct CountingMIS
+
+A struct representing a counting maximum independent set (MIS), where `mis` for size of the maximum independent set and `count` for the count of branches.
+
+# Fields
+- `mis::Int`: The maximum independent set.
+- `count::Int`: The count of the maximum independent set.
+
+# Constructors
+- `CountingMIS(mis::Int)`: Constructs a CountingMIS object with the given maximum independent set and count set to 1.
+- `CountingMIS(mis::Int, count::Int)`: Constructs a CountingMIS object with the given maximum independent set and count.
+
+# Examples
+```jldoctest
+julia> CountingMIS(2, 2) + 2
+CountingMIS(4, 2)
+
+julia> CountingMIS(1, 1) + CountingMIS(2, 2)
+CountingMIS(3, 3)
+
+julia> max(CountingMIS(1, 1), CountingMIS(2, 2))
+CountingMIS(2, 3)
+```
+"""
 struct CountingMIS
     mis::Int
     count::Int

@@ -41,61 +41,53 @@ function add_removed!(node::BranchingNode, removed::Vector{Int})
 end
 
 """
-    branching_tree(g::SimpleGraph, strategy::AbstractBranching, kneighbor::Int, use_rv::Bool)
+    branching_tree(g::SimpleGraph, config::SolverConfig)
 
-Constructs a branching tree based on the given graph `g` using the specified `strategy`.
-The `kneighbor` parameter determines the number of neighbors to consider during branching.
-If `use_rv` is `true`, number of vertex removed is used; otherwise, only count the clause.
-
-# Arguments
-- `g::SimpleGraph`: The input graph.
-- `strategy::AbstractBranching`: The branching strategy to use.
-- `kneighbor::Int`: The number of neighbors to consider during branching.
-- `use_rv::Bool`: Whether to use number of vertex removed.
-
-# Returns
-- `tree`: The constructed branching tree.
-- `branch_num`: The number of branches in the tree.
+Constructs a branching tree based on the given graph `g` using the specified `config`.
 """
-function branching_tree(g::SimpleGraph, strategy::AbstractBranching, kneighbor::Int, use_rv::Bool)
-    tree = _branching_tree(g, strategy, kneighbor, use_rv)
+function branching_tree(g::SimpleGraph, config::SolverConfig)
+    tree = _branching_tree(g, config)
     branch_num = length(collect(Leaves(tree)))
     return tree, branch_num
 end
 
-function _branching_tree(g::SimpleGraph, strategy::AbstractBranching, kneighbor::Int, use_rv::Bool)
+function _branching_tree(g::SimpleGraph, config::SolverConfig)
     dg = degree(g)
     if nv(g) == 0 || nv(g) == 1
         return BranchingNode(g)
     elseif (0 ∈ dg) || (1 ∈ dg)
         v = findfirst(x -> (x==0)||(x==1), dg)
-        return BranchingNode(g, children=[_branching_tree(induced_subgraph(g, setdiff(1:nv(g), v ∪ neighbors(g, v)))[1], strategy, kneighbor, use_rv)])
-    elseif maximum(degree(g)) ≥ 6
-        v = argmax(degree(g))
-        return BranchingNode(g, children=[_branching_tree(induced_subgraph(g, setdiff(1:nv(g), v ∪ neighbors(g, v)))[1], strategy, kneighbor, use_rv), _branching_tree(induced_subgraph(g, setdiff(1:nv(g), v))[1], strategy, kneighbor, use_rv)], removed=[v ∪ neighbors(g, v), [v]])
-    end
-    
-    vertices, openvertices, dnf = optimal_branches(g, strategy, kneighbor, use_rv)
-    # @assert !isempty(vertices)
-    
-    root = BranchingNode(g)
-    for i in 1:length(dnf.clauses)
-        clause = dnf.clauses[i]
-        removed_vertices = Int[]
-        for (k, v) in enumerate(vertices)
-            if readbit(clause.mask, k) == 1
-                push!(removed_vertices, v)
-                if readbit(clause.val, k) == 1
-                    append!(removed_vertices, neighbors(g, v))
-                end
+        return BranchingNode(g, children=[_branching_tree(induced_subgraph(g, setdiff(1:nv(g), v ∪ neighbors(g, v)))[1], config)])
+    elseif (2 ∈ dg)
+        v = findfirst(x -> (x==2), dg)
+        a, b = neighbors(g, v)
+        if has_edge(g, a, b)
+            return BranchingNode(g, children=[_branching_tree(induced_subgraph(g, setdiff(1:nv(g), [v, a, b]))[1], config)], removed=[[v, a, b]])
+        else
+            # apply the graph rewrite rule
+            add_vertex!(g)
+            nn = open_neighbors(g, [v, a, b])
+            for n in nn
+                add_edge!(g, nv(g), n)
             end
+            return BranchingNode(g, children=[_branching_tree(induced_subgraph(g, setdiff(1:nv(g), [v, a, b]))[1], config)], removed=[[v, a, b]])
         end
-        gi = copy(g)
-        rem_vertices!(gi, removed_vertices)
-        @assert !isempty(removed_vertices)
-        add_removed!(root, unique(removed_vertices))
-        add_child!(root, _branching_tree(gi, strategy, kneighbor, use_rv))
-    end
+    elseif maximum(dg) ≥ 6
+        v = argmax(dg)
+        return BranchingNode(g, children=[_branching_tree(induced_subgraph(g, setdiff(1:nv(g), v ∪ neighbors(g, v)))[1], config), _branching_tree(induced_subgraph(g, setdiff(1:nv(g), v))[1], config)], removed=[v ∪ neighbors(g, v), [v]])
+    else
+        root = BranchingNode(g)
+        vertices = select_vertex(g, config.vertex_selector)
+        branches = optimal_branches(g, vertices, config.branching_strategy; config.measure, config.table_filter, config.table_solver)
+        
+        for i in 1:length(branches.branches)
+            rvs = branches.branches[i].vertices_removed
+            gi = copy(g)
+            rem_vertices!(gi, rvs)
+            add_removed!(root, unique(rvs))
+            add_child!(root, _branching_tree(gi, config))
+        end
 
-    return root
+        return root
+    end
 end

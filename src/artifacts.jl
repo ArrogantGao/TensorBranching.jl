@@ -15,6 +15,20 @@ function _load_gr(filename)
     end
 end
 
+"""
+    graph_from_artifact(num::Int)
+
+Load a graph of the PACE2019 dataset as `SimpleGraph`.
+
+# Arguments
+- `num::Int`: The number of the artifact.
+
+# Examples
+```jldoctest
+julia> graph_from_artifact(1)
+{6160, 40207} undirected simple Int64 graph
+```
+"""
 function graph_from_artifact(num::Int)
     try
         snum = lpad(string(num), 3, '0')
