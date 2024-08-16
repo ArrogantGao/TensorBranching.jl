@@ -17,14 +17,15 @@ Reexport = "189a3867-3050-52da-a836-e630ba90ab69"
 
 [compat]
 AbstractTrees = "0.4"
+Artifacts = "1"
 BitBasis = "0.9.5"
+DocumenterTools = "0.1"
 EliminateGraphs = "0.2"
 GenericTensorNetworks = "2.2"
 HiGHS = "1"
 JuMP = "1"
 NLsolve = "4"
 Reexport = "1"
-Artifacts = "1"
 julia = "1"
 
 [extras]
