@@ -14,9 +14,11 @@ HiGHS = "87dc4568-4c63-4d18-b0c0-bb2238e4078b"
 JuMP = "4076af6c-e467-56ae-b986-b466b2749572"
 NLsolve = "2774e3e8-f4cf-5e23-947b-6d7e65073b56"
 Reexport = "189a3867-3050-52da-a836-e630ba90ab69"
+SCIP = "82193955-e24f-5292-bf16-6f2c5261a85f"
 
 [compat]
 AbstractTrees = "0.4"
+Artifacts = "1"
 BitBasis = "0.9.5"
 EliminateGraphs = "0.2"
 GenericTensorNetworks = "2.2"
@@ -24,11 +26,11 @@ HiGHS = "1"
 JuMP = "1"
 NLsolve = "4"
 Reexport = "1"
-Artifacts = "1"
 julia = "1"
 
 [extras]
+Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
-test = ["Test"]
+test = ["Test", "Random"]

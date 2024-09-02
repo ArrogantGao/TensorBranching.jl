@@ -34,6 +34,16 @@ This type serves as a base for defining different truth filter strategies.
 abstract type AbstractTruthFilter end
 
 """
+    abstract type AbstractSetCoverSolver
+
+Abstract type representing a solver for the set cover problem, including linear programming and integer programming solvers.
+"""
+abstract type  AbstractSetCoverSolver end
+
+struct LPSetCoverSolver <: AbstractSetCoverSolver end
+struct IPSetCoverSolver <: AbstractSetCoverSolver end
+
+"""
     struct NaiveBranching <: AbstractBranching
 A struct representing the NaiveBranching branching strategy.
 """
@@ -58,12 +68,15 @@ A struct representing a branching strategy for set cover problems.
 """
 struct SetCoverBranching <: AbstractBranching 
     max_itr::Int
-    SetCoverBranching() = new(3)
-    SetCoverBranching(max_itr::Int) = new(max_itr)
+    solver::AbstractSetCoverSolver
+    SetCoverBranching() = new(5, IPSetCoverSolver())
+    SetCoverBranching(max_itr::Int) = new(max_itr, IPSetCoverSolver())
+    SetCoverBranching(solver::AbstractSetCoverSolver) = new(5, solver)
+    SetCoverBranching(max_itr::Int, solver::AbstractSetCoverSolver) = new(max_itr, solver)
 end
 
 function impl_strategy(g::SimpleGraph, vertices::Vector{Int}, tbl::BranchingTable{INT}, strategy::SetCoverBranching, measure::AbstractMeasure) where INT
-    return setcover_strategy(tbl, vertices, g, strategy.max_itr, measure)
+    return setcover_strategy(tbl, vertices, g, strategy.max_itr, measure, strategy.solver)
 end
 
 struct NumOfVertices <: AbstractMeasure end # each vertex is counted as 1

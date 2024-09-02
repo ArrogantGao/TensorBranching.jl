@@ -9,7 +9,8 @@ using EliminateGraphs: mis2, EliminateGraph
     tbl = reduced_alpha_configs(TensorNetworkSolver(), graph, [1, 2])
     v = [1, 2, 3]
     @test TensorBranching.impl_strategy(graph, v, tbl, NaiveBranching(), NumOfVertices()) == Branches(Branch[Branch([1, 2, 3], 1)])
-    @test TensorBranching.setcover_strategy(tbl, v, graph, 3, NumOfVertices()) == Branches(Branch[Branch([1, 2, 3], 1)])
+    @test TensorBranching.setcover_strategy(tbl, v, graph, 3, NumOfVertices(), IPSetCoverSolver()) == Branches(Branch[Branch([1, 2, 3], 1)])
+    @test TensorBranching.setcover_strategy(tbl, v, graph, 3, NumOfVertices(), LPSetCoverSolver()) == Branches(Branch[Branch([1, 2, 3], 1)])
     @test TensorBranching.impl_strategy(graph, v, tbl, SetCoverBranching(5), NumOfVertices()) == Branches(Branch[Branch([1, 2, 3], 1)])
 end
 

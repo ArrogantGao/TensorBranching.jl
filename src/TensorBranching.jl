@@ -1,6 +1,6 @@
 module TensorBranching
 
-using NLsolve, JuMP, HiGHS
+using NLsolve, JuMP, HiGHS, SCIP
 using GenericTensorNetworks
 import EliminateGraphs
 
@@ -20,6 +20,7 @@ export AbstractMeasure, NumOfVertices, D3Measure
 export AbstractVertexSelector, MinBoundarySelector
 export AbstractTruthFilter, NoFilter, EnvFilter
 export AbstractMISSolver, TensorNetworkSolver
+export AbstractSetCoverSolver, IPSetCoverSolver, LPSetCoverSolver
 
 export Branch, Branches, effective_γ, optimal_branches
 
