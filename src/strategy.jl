@@ -64,19 +64,17 @@ A struct representing a branching strategy for set cover problems.
 # Constructors
 - `SetCoverBranching()`: Constructs a `SetCoverBranching` object with a default value of `2` for `max_itr`.
 - `SetCoverBranching(max_itr::Int)`: Constructs a `SetCoverBranching` object with the specified `max_itr` value.
+- `verbose::Bool`: A boolean indicating whether to print the output.
 
 """
-struct SetCoverBranching <: AbstractBranching 
-    max_itr::Int
-    solver::AbstractSetCoverSolver
-    SetCoverBranching() = new(5, IPSetCoverSolver())
-    SetCoverBranching(max_itr::Int) = new(max_itr, IPSetCoverSolver())
-    SetCoverBranching(solver::AbstractSetCoverSolver) = new(5, solver)
-    SetCoverBranching(max_itr::Int, solver::AbstractSetCoverSolver) = new(max_itr, solver)
+Base.@kwdef struct SetCoverBranching <: AbstractBranching 
+    max_itr::Int = 5
+    solver::AbstractSetCoverSolver = IPSetCoverSolver()
+    verbose::Bool = false
 end
 
 function impl_strategy(g::SimpleGraph, vertices::Vector{Int}, tbl::BranchingTable{INT}, strategy::SetCoverBranching, measure::AbstractMeasure) where INT
-    return setcover_strategy(tbl, vertices, g, strategy.max_itr, measure, strategy.solver)
+    return setcover_strategy(tbl, vertices, g, strategy.max_itr, measure, strategy.solver, strategy.verbose)
 end
 
 struct NumOfVertices <: AbstractMeasure end # each vertex is counted as 1
