@@ -33,11 +33,15 @@ end
 
 function γ0(sub_covers::AbstractVector{SubCover{INT}}) where{INT}
     n = max_id(sub_covers)
-    max_rvs = Int[]
-    for i in 1:n
-        rvs = [sc.n_rm for sc in sub_covers if sc.ids == Set([i])]
-        push!(max_rvs, maximum(rvs))
+    max_dict = Dict([i => 0 for i in 1:n])
+    for sub_cover in sub_covers
+        length(sub_cover.ids) == 1 || continue
+        id = first(sub_cover.ids)
+        max_dict[id] = max(max_dict[id], sub_cover.n_rm)
     end
+
+    max_rvs = [max_dict[i] for i in 1:n]
+
     return complexity(max_rvs), n
 end
 
@@ -71,7 +75,9 @@ function cover(sub_covers::AbstractVector{SubCover{INT}}, max_itr::Int, ::LPSetC
 end
 
 function cover(sub_covers::AbstractVector{SubCover{INT}}, max_itr::Int, ::IPSetCoverSolver; min_complexity::TF = 1.0) where{INT, TF}
+    @debug "calculating γ0"
     cx, n = γ0(sub_covers)
+    @debug "γ0 = $cx"
     scs_new = copy(sub_covers)
     for i =1:max_itr
         xs = IP_setcover(cx, scs_new, n)

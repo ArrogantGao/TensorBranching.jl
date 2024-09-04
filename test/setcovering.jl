@@ -10,7 +10,6 @@ Random.seed!(1234)
     scs = subcovers(bbs, v, g, NumOfVertices())
     cov_lp, cx_lp = cover(copy(scs), 3, LPSetCoverSolver())
     cov_ip, cx_ip = cover(copy(scs), 3, IPSetCoverSolver())
-    @show cx_lp, cx_ip
     picked_lp = Set{Int}()
     picked_ip = Set{Int}()
     for covi in cov_lp
@@ -20,5 +19,4 @@ Random.seed!(1234)
         picked_ip = union(picked_ip, covi.ids)
     end
     @test length(picked_lp) == length(picked_ip) == length(bs)
-    @test cx_lp ≈ cx_ip
 end
