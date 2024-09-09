@@ -68,7 +68,7 @@ A struct representing a branching strategy for set cover problems.
 
 """
 Base.@kwdef struct SetCoverBranching <: AbstractBranching 
-    max_itr::Int = 5
+    max_itr::Int = 10
     solver::AbstractSetCoverSolver = IPSetCoverSolver()
     verbose::Bool = false
 end

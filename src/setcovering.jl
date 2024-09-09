@@ -64,13 +64,16 @@ function cover(sub_covers::AbstractVector{SubCover{INT}}, max_itr::Int, ::LPSetC
     cx, n = γ0(sub_covers)
     verbose && (@info "γ0 = $cx")
     scs_new = copy(sub_covers)
+    cx_old = cx
     for i =1:max_itr
         xs = LP_setcover(cx, scs_new, n, verbose)
         picked = random_pick(xs, sub_covers, n)
         cx = complexity(picked)
         verbose && (@info "LP Solver, Iteration $i, complexity = $cx")
-        if (cx < min_complexity) || (i == max_itr)
+        if (cx < min_complexity) || (i == max_itr)  || (cx ≈ cx_old)
             return picked, cx
+        else
+            cx_old = cx
         end
     end
 end
@@ -79,13 +82,16 @@ function cover(sub_covers::AbstractVector{SubCover{INT}}, max_itr::Int, ::IPSetC
     cx, n = γ0(sub_covers)
     verbose && (@info "γ0 = $cx")
     scs_new = copy(sub_covers)
+    cx_old = cx
     for i =1:max_itr
         xs = IP_setcover(cx, scs_new, n, verbose)
         picked = pick(xs, sub_covers)
         cx = complexity(picked)
         verbose && (@info "IP Solver, Iteration $i, complexity = $cx")
-        if (cx < min_complexity) || (i == max_itr)
+        if (cx < min_complexity) || (i == max_itr) || (cx ≈ cx_old)
             return picked, cx
+        else
+            cx_old = cx
         end
     end
 end
@@ -116,7 +122,9 @@ function IP_setcover(γp::TF, sub_covers::AbstractVector{SubCover{INT}}, n::Int,
     optimize!(model)
     @assert is_solved_and_feasible(model)
 
-    return [value(x[i]) for i in 1:nsc]
+    selected = [value(x[i]) for i in 1:nsc]
+
+    return selected
 end
 
 function LP_setcover(γp::TF, sub_covers::AbstractVector{SubCover{INT}}, n::Int, verbose::Bool) where{INT, TF}
