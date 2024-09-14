@@ -12,7 +12,7 @@ export Clause, clause, clauses, SubCover
 export subcovers, subcovers_naive, all_clauses_naive
 export LP_setcover, random_pick, cover
 export sbranches, complexity
-export graph_from_tuples, reduced_alpha, reduced_alpha_configs, collect_configs, BranchingTable, DNF, booleans, covered_by
+export graph_from_tuples, alpha, reduced_alpha, reduced_alpha_configs, collect_configs, BranchingTable, DNF, booleans, covered_by
 
 export SolverConfig
 export AbstractBranching, NaiveBranching, SetCoverBranching

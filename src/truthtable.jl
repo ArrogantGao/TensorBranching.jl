@@ -6,6 +6,12 @@ function graph_from_tuples(n::Int, edgs)
     g
 end
 
+function alpha(g::SimpleGraph, openvertices::Vector{Int})
+	problem = GenericTensorNetwork(IndependentSet(g); openvertices, optimizer = GreedyMethod(nrepeat=1))
+	alpha_tensor = solve(problem, SizeMax())
+    return alpha_tensor
+end
+
 # Let us create a function for finding reduced ``\alpha``-tensors."
 function reduced_alpha(g::SimpleGraph, openvertices::Vector{Int})
 	problem = GenericTensorNetwork(IndependentSet(g); openvertices, optimizer = GreedyMethod(nrepeat=1))
