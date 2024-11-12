@@ -18,6 +18,10 @@ end
     include("missolve.jl")
 end
 
-@testset "artifacts" begin
-    include("artifacts.jl")
+# @testset "artifacts" begin
+#     include("artifacts.jl")
+# end
+
+@testset "treedecomp" begin
+    include("treedecomp.jl")
 end

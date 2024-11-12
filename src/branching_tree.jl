@@ -1,7 +1,5 @@
 # a tool to generate the branching process as a tree
 
-using AbstractTrees
-
 """
     mutable struct BranchingNode
 

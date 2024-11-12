@@ -1,6 +1,0 @@
-[PACE2019]
-git-tree-sha1 = "fc4e14ebd83320c667f31f286a16e21476889192"
-
-    [[PACE2019.download]]
-    sha256 = "2bd37b0588302cedf1d61658d24796779cb1029b78d0edf4ef1aac6972700b47"
-    url = "https://gist.github.com/ArrogantGao/4d4105984ebc8f93504ab88cd140f6ff/raw/fc4e14ebd83320c667f31f286a16e21476889192.tar.gz"

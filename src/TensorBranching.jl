@@ -3,6 +3,8 @@ module TensorBranching
 using NLsolve, JuMP, HiGHS, SCIP
 using GenericTensorNetworks
 import EliminateGraphs
+using AbstractTrees
+using TreeWidthSolver, OMEinsum
 
 using Base.Threads
 using Reexport
@@ -23,12 +25,13 @@ export AbstractMISSolver, TensorNetworkSolver
 export AbstractSetCoverSolver, IPSetCoverSolver, LPSetCoverSolver
 
 export Branch, Branches, effective_γ, optimal_branches
-
 export solve_mis, count_mis, CountingMIS, branching_tree
 
-export graph_from_artifact
+export decompose
 
-include("artifacts.jl")
+# export graph_from_artifact
+
+# include("artifacts.jl")
 include("counting_mis.jl")
 include("bitstring.jl")
 include("truthtable.jl")
@@ -38,5 +41,7 @@ include("clauses.jl")
 include("setcovering.jl")
 include("solver.jl")
 include("branching_tree.jl")
+
+include("treedecomp.jl")
 
 end
