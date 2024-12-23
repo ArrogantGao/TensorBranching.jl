@@ -16,4 +16,9 @@ Random.seed!(1234)
     @test width(tree) + 1 ≈ floor(cc.tc / 10)
 
     @test is_treedecomposition(g0, tree)
+
+    eincode = optein"ij, jk, kl, il-> "
+    tree = decompose(eincode)
+    cc = contraction_complexity(eincode, uniformsize(eincode, 2^10))
+    @test width(tree) + 1 ≈ floor(cc.tc / 10)
 end

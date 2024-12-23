@@ -31,9 +31,8 @@ end
 
 function decompose(code::NestedEinsum{L}) where {L}
     g, id_dict = eincode2graph(code)
-    order = eincode2order(code)
-    labels = [id_dict[id] for id in order]
-    return decomposition_tree(g, order, labels = labels)
+    labels = collect(keys(id_dict))[sortperm(collect(values(id_dict)))]
+    return decomposition_tree(g, eincode2order(code), labels = labels)
 end
 
 function max_bag(tree::DecompositionTreeNode)
