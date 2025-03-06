@@ -36,11 +36,11 @@ function decompose(code::NestedEinsum{L}) where {L}
 end
 
 function max_bag(tree::DecompositionTreeNode)
-    max_bag = tree
-    max_size = length(max_bag.bag)
+    max_bag = tree.bag
+    max_size = length(max_bag)
     for node in PostOrderDFS(tree)
         if length(node.bag) > max_size
-            max_bag = node
+            max_bag = node.bag
             max_size = length(node.bag)
         end
     end
