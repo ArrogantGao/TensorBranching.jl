@@ -15,6 +15,17 @@ function get_subtree_pre(code::CT, size_dict::Dict{LT, Int}, threshold::T) where
     return code
 end
 
+function get_subtree_post(code::CT, size_dict::Dict{LT, Int}, threshold::T) where {CT, LT, T}
+    for subtree in PostOrderDFS(code)
+        (subtree isa OMEinsum.LeafString) && continue
+        if _log2_einsize(subtree.eins, size_dict) ≥ threshold
+            return subtree
+        end
+    end
+    # if no subtree larger than threshold, return the whole code
+    return code
+end
+
 function list_subtree(code::CT, size_dict::Dict{LT, Int}, threshold::T) where {CT, LT, T}
     subtrees = Vector{CT}()
     _list_subtree!(subtrees, code, size_dict, threshold)
@@ -37,15 +48,4 @@ function most_label_subtree(code::CT, size_dict::Dict{LT, Int}, threshold::T) wh
     subtrees = list_subtree(code, size_dict, threshold)
     num_of_labels = [length(OMEinsum.uniquelabels(subtree)) for subtree in subtrees]
     return subtrees[findmax(num_of_labels)[2]]
-end
-
-function get_subtree_post(code::CT, size_dict::Dict{LT, Int}, threshold::T) where {CT, LT, T}
-    for subtree in PostOrderDFS(code)
-        (subtree isa OMEinsum.LeafString) && continue
-        if _log2_einsize(subtree.eins, size_dict) ≥ threshold
-            return subtree
-        end
-    end
-    # if no subtree larger than threshold, return the whole code
-    return code
 end

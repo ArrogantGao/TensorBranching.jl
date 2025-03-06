@@ -77,6 +77,6 @@ function unsafe_flatten(code::DynamicNestedEinsum{LT}) where LT
     DynamicEinCode([haskey(ixd, i) ? ixd[i] : LT[] for i=1:maximum(keys(ixd))], collect(OMEinsum.getiy(code.eins)))
 end
 
-function rethermalize(code::Union{DynamicNestedEinsum{LT}, SlicedEinsum{LT}}, size_dict::Dict{LT, Int}; βs = 14:0.05:15, ntrials = 1) where LT
-    return optimize_code(code, size_dict, TreeSA(initializer = :specified, βs=βs, ntrials=ntrials)).eins
+function rethermalize(code::Union{DynamicNestedEinsum{LT}, SlicedEinsum{LT}}, size_dict::Dict{LT, Int}; βs = 14:0.05:15, ntrials = 1, sc_target = 25) where LT
+    return optimize_code(code, size_dict, TreeSA(initializer = :specified, βs=βs, ntrials=ntrials, sc_target=sc_target)).eins
 end
