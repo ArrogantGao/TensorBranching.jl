@@ -14,15 +14,11 @@ export decompose
 export kernelize
 
 include("types.jl")
-include("utils.jl")
-
-# function about tree decomposition and reformulation
-include("tree_decompose.jl")
-include("tree_select.jl")
-include("tree_reform.jl")
+include("tree_utils.jl")
 
 # dynamic ob
-include("kernelize.jl")
 include("dynamic_ob.jl")
+include("kernelize.jl")
+include("slice.jl")
 
 end
