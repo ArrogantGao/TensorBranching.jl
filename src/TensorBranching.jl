@@ -7,6 +7,7 @@ using OMEinsum, GenericTensorNetworks
 using OMEinsum.AbstractTrees
 
 using OptimalBranchingCore, OptimalBranchingMIS
+using OptimalBranchingCore.BitBasis
 using OptimalBranchingMIS.KaHyPar, OptimalBranchingMIS.SparseArrays
 
 export decompose

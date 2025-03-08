@@ -184,3 +184,11 @@ end
 function rethermalize(code::Union{DynamicNestedEinsum{LT}, SlicedEinsum{LT}}, size_dict::Dict{LT, Int}; βs = 100:0.05:101, ntrials = 1, sc_target = 25) where LT
     return optimize_code(code, size_dict, TreeSA(initializer = :specified, βs=βs, ntrials=ntrials, sc_target=sc_target)).eins
 end
+
+# Personally, I think the design of SlicedEinsum is terrible, same function, different output type
+function true_eincode(code::Union{DynamicNestedEinsum{LT}, SlicedEinsum{LT}}) where LT
+    return code isa SlicedEinsum ? code.eins : code
+end
+
+
+# TODO: map the contraction order of the original graph to the new graph by using the same elimination order, if we want to kernelize the graph after each branching step
