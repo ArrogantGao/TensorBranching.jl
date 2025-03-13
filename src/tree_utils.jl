@@ -2,7 +2,7 @@ using OMEinsum: getixsv, getiyv, LeafString, flatten, _flatten, isleaf
 
 export eincode2order, eincode2graph, decompose, max_bag
 export get_subtree_pre, get_subtree_post, list_subtree, most_label_subtree
-export remove_tensors, remove_tensors!, tensors_removed, unsafe_flatten, rethermalize
+export remove_tensors, remove_tensors!, tensors_removed, unsafe_flatten, rethermalize, reindex_tree!
 
 
 # transform optimized eincode to elimination order
@@ -174,8 +174,42 @@ function unsafe_flatten(code::DynamicNestedEinsum{LT}) where LT
     DynamicEinCode([haskey(ixd, i) ? ixd[i] : LT[] for i=1:maximum(keys(ixd))], collect(OMEinsum.getiy(code.eins)))
 end
 
-function rethermalize(code::Union{DynamicNestedEinsum{LT}, SlicedEinsum{LT}}, size_dict::Dict{LT, Int}; βs = 100:0.05:101, ntrials = 1, sc_target = 25) where LT
-    return optimize_code(code, size_dict, TreeSA(initializer = :specified, βs=βs, ntrials=ntrials, sc_target=sc_target)).eins
+function rethermalize(code::Union{DynamicNestedEinsum{LT}, SlicedEinsum{LT}}, size_dict::Dict{LT, Int}, βs::StepRangeLen, ntrials::Int, niters::Int, sc_target::Int) where LT
+    return optimize_code(code, size_dict, TreeSA(initializer = :specified, βs=βs, ntrials=ntrials, niters=niters, sc_target=sc_target)).eins
+end
+
+function reconfig_code(code::Union{DynamicNestedEinsum{LT}, SlicedEinsum{LT}}, vs::Vector{LT}, size_dict::Dict{LT, Int}, βs::StepRangeLen, ntrials::Int, niters::Int, sc_target::Int) where LT
+    tids = tensors_removed(code, vs)
+    new_code = remove_tensors(code, tids)
+    return rethermalize(new_code, size_dict, βs, ntrials, niters, sc_target)
+end
+
+# this part is about reindex the tree with a vertex map
+
+function inverse_vmap(vmap::Vector{Int})
+    ivmap = zeros(Int, maximum(vmap))
+    for (i, v) in enumerate(vmap)
+        ivmap[v] = i
+    end
+    return ivmap
+end
+
+# reindex the tree with a vertex map
+function reindex_tree!(code::DynamicNestedEinsum{LT}, vmap::Vector{Int}) where LT
+    return _reindex_tree!(code, inverse_vmap(vmap))
+end
+function _reindex_tree!(code::DynamicNestedEinsum{LT}, ivmap::Vector{Int}) where LT
+    OMEinsum.isleaf(code) && return nothing
+    
+    # notice that eins.ixs[i] is actually eins.args[i].eins.iy, the same in memory
+    for (i, ix) in enumerate(code.eins.ixs)
+        for (j, ixi) in enumerate(ix)
+            ix[j] = ivmap[ixi]
+        end
+        _reindex_tree!(code.args[i], ivmap)
+    end
+    
+    return nothing
 end
 
 # Personally, I think the design of SlicedEinsum is terrible, same function, different output type

@@ -1,41 +1,33 @@
 # generate slices from the kernelized graph
 
-function slice(g::SimpleGraph{Int}, code::DynamicNestedEinsum{Int}, slicer::ContractionTreeSlicer)
+function slice(g::SimpleGraph{Int}, code::DynamicNestedEinsum{Int}, slicer::AbstractSlicer)
     size_dict = uniformsize(code, 2)
-    mask = bmask(BitBasis.longinttype(nv(g), 2), 1:nv(g))
-    slices = Vector{Tuple{typeof(mask), DynamicNestedEinsum{Int}}}()
-    _slice!(slices, g, code, slicer, mask, size_dict)
+    slices = Vector{Tuple{SimpleGraph{Int}, DynamicNestedEinsum{Int}}}()
+    _slice!(slices, g, code, slicer, size_dict)
     return slices
 end
 
-function _slice!(slices::Vector{Tuple{INT, DynamicNestedEinsum{Int}}}, g::SimpleGraph{Int}, code::DynamicNestedEinsum{Int}, slicer::ContractionTreeSlicer, mask::INT, size_dict::Dict{Int, Int}) where{INT}
+function _slice!(slices::Vector{Tuple{SimpleGraph{Int}, DynamicNestedEinsum{Int}}}, g::SimpleGraph{Int}, code::DynamicNestedEinsum{Int}, slicer::AbstractSlicer, size_dict::Dict{Int, Int})
+
     if (contraction_complexity(code, size_dict).sc ≤ slicer.sc_target)
-        push!(slices, (mask, code))
+        push!(slices, (g, code))
         return nothing
     end
 
     # res is a vector of (mask, code), each corresponding to a slice
-    branches = dynamic_ob_slicing(g, code, slicer, mask, size_dict)
+    branches = dynamic_ob_slicing(g, code, slicer, size_dict)
 
-    for (mask, code) in branches
-        _slice!(slices, g, code, slicer, mask, size_dict)
+    for (g, code) in branches
+        _slice!(slices, g, code, slicer, size_dict)
     end
+
     return nothing
 end
 
-function dynamic_ob_slicing(g::SimpleGraph{Int}, code::DynamicNestedEinsum{Int}, slicer::ContractionTreeSlicer, mask::INT, size_dict::Dict{Int, Int}) where{INT}
+function dynamic_ob_slicing(g::SimpleGraph{Int}, code::DynamicNestedEinsum{Int}, slicer::ContractionTreeSlicer, size_dict::Dict{Int, Int})
 
-    vs = ob_region()
-    branches = optimal_branches(vs, g, code, slicer, mask, size_dict)
+    region, loss = ob_region(g, code, slicer, slicer.region_selector, size_dict)
+    branches = optimal_branches(g, code, slicer, region, size_dict)
 
     return branches
-end
-
-function ob_region(g::SimpleGraph{Int}, code::DynamicNestedEinsum{Int}, slicer::ContractionTreeSlicer, mask::INT, size_dict::Dict{Int, Int}) where{INT}
-
-    large_tensors = list_subtree(code, size_dict, slicer.threshold)
-    large_tensors_iy = [t.eins.iy for t in large_tensors]
-
-    # a heuristic way: try to find the 
-
 end
