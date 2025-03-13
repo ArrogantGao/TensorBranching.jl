@@ -30,3 +30,12 @@ function dynamic_ob_slicing(g::SimpleGraph{Int}, code::DynamicNestedEinsum{Int},
 
     return branches
 end
+
+function ob_region(g::SimpleGraph{Int}, code::DynamicNestedEinsum{Int}, slicer::ContractionTreeSlicer, mask::INT, size_dict::Dict{Int, Int}) where{INT}
+
+    large_tensors = list_subtree(code, size_dict, slicer.threshold)
+    large_tensors_iy = [t.eins.iy for t in large_tensors]
+
+    # a heuristic way: try to find the 
+
+end

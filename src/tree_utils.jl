@@ -80,20 +80,13 @@ end
 
 function list_subtree(code::CT, size_dict::Dict{LT, Int}, threshold::T) where {CT, LT, T}
     subtrees = Vector{CT}()
-    _list_subtree!(subtrees, code, size_dict, threshold)
+    for subtree in PostOrderDFS(code)
+        (subtree isa LeafString) && continue
+        if _log2_einsize(subtree.eins, size_dict) ≥ threshold
+            push!(subtrees, subtree)
+        end
+    end
     return subtrees
-end
-
-function _list_subtree!(subtrees::Vector{CT}, code::CT, size_dict::Dict{LT, Int}, threshold::T) where {CT, LT, T}
-    OMEinsum.isleaf(code) && return nothing
-    if _log2_einsize(code.eins, size_dict) ≤ threshold
-        push!(subtrees, code)
-        return nothing
-    end
-    for child in code.args
-        _list_subtree!(subtrees, child, size_dict, threshold)
-    end
-    return nothing
 end
 
 function most_label_subtree(code::CT, size_dict::Dict{LT, Int}, threshold::T) where {CT, LT, T}
