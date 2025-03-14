@@ -1,16 +1,16 @@
 using TensorBranching
 using GenericTensorNetworks
-using GenericTensorNetworks.Graphs
-using GenericTensorNetworks.TropicalNumbers
-using GenericTensorNetworks.OMEinsum, GenericTensorNetworks.OMEinsum.AbstractTrees
-using GenericTensorNetworks.OMEinsum.OMEinsumContractionOrders.TreeWidthSolver
+using Graphs, TropicalNumbers, OMEinsum
 
 using OptimalBranching
 using OptimalBranching.OptimalBranchingCore, OptimalBranching.OptimalBranchingMIS
+using OptimalBranching.OptimalBranchingMIS.EliminateGraphs
 
 using Test
 using Random
 Random.seed!(1234)
+
+using TensorBranching: remove_tensors, remove_tensors!, tensors_removed, unsafe_flatten, rethermalize, reindex_tree!
 
 # @testset "tree decomposition" begin
 #     g0 = random_regular_graph(100, 3)
@@ -33,22 +33,27 @@ Random.seed!(1234)
 @testset "tree reform" begin
     for i in 1:1000
         Random.seed!(i)
-        n = rand(20:30)
-        g = random_regular_graph(n, 4)
+        n = 30
+        g = random_regular_graph(n, 3)
         net = GenericTensorNetwork(IndependentSet(g))
         order = net.code
         tensors = GenericTensorNetworks.generate_tensors(TropicalF32(1.0), net)
 
-        remove = rand(1:n, rand(1:10))
-        subg, vmap = induced_subgraph(g, setdiff(1:n, remove))
-        mis = solve(GenericTensorNetwork(IndependentSet(subg)), SizeMax())[]
+        # check if the result is still correct after removing for more than one rounds
+        for _ in 1:4
+            remove = rand(1:nv(g), rand(1:5))
+            subg, vmap = induced_subgraph(g, setdiff(1:nv(g), remove))
+            mis = mis2(EliminateGraph(subg))
 
-        tids = tensors_removed(order, remove)
-        sub_order = remove_tensors(order, tids)
-        @test sub_order(tensors...)[] == mis
+            tids = tensors_removed(order, remove)
+            sub_order = remove_tensors(order, tids)
+            @test sub_order(tensors...)[].n ≈ mis
 
-        reindex_tree!(sub_order, vmap)
-        @test sub_order(tensors...)[] == mis
+            ri_order = reindex_tree!(sub_order, vmap)
+            @test ri_order(tensors...)[].n ≈ mis
+            g = subg
+            order = ri_order
+        end
     end
 end
 
@@ -69,6 +74,6 @@ end
         ri_order = reindex_tree!(deepcopy(sub_order), vmap)
         rt_ri_order = rethermalize(deepcopy(ri_order), uniformsize(ri_order, 2), 100.0:100.0, 1, 10, 25)
         
-        @test rt_order(tensors...)[] == sub_order(tensors...)[] == ri_order(tensors...)[] == rt_ri_order(tensors...)[] == solve(GenericTensorNetwork(IndependentSet(subg)), SizeMax())[]
+        @test rt_order(tensors...)[].n ≈ sub_order(tensors...)[].n ≈ ri_order(tensors...)[].n ≈ rt_ri_order(tensors...)[].n ≈ mis2(EliminateGraph(subg))
     end
 end
