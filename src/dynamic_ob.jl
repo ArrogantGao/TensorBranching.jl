@@ -6,6 +6,7 @@ function dynamic_ob_mis(g::SimpleGraph; reducer::AbstractReducer = TensorNetwork
     if use_kernelize
         g_kernelized, r = kernelize(g, reducer)
         r = r.n
+        @info "kernelized graph: {$(nv(g_kernelized)), $(ne(g_kernelized))} simple graph"
     else
         g_kernelized = g
         r = 0
@@ -21,7 +22,7 @@ function dynamic_ob_mis(g::SimpleGraph; reducer::AbstractReducer = TensorNetwork
 
     # 3. slicing via branching, each g_slice should be a tuple of (sliced_graph, contraction_order)
     branches = slice(g_kernelized, code, slicer)
-    @show branches
+    @info "branches: $(length(branches))"
 
     # 3. contract the slices
     res = [item(branch.code(tensors...)).n + branch.r + r for branch in branches]
@@ -32,6 +33,6 @@ end
 
 item(t::Array{T, 0}) where {T} = t[]
 
-function gpu_tensors(tensors) where {T}
+function gpu_tensors(tensors)
     error("CUDA should be loaded as a external package.")
 end
