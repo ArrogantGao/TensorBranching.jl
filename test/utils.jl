@@ -1,7 +1,12 @@
 using TensorBranching
-using OMEinsum, OMEinsum.AbstractTrees, TreeWidthSolver
-using Graphs
-using GenericTensorNetworks, GenericTensorNetworks.TropicalNumbers
+using GenericTensorNetworks
+using GenericTensorNetworks.Graphs
+using GenericTensorNetworks.TropicalNumbers
+using GenericTensorNetworks.OMEinsum, GenericTensorNetworks.OMEinsum.AbstractTrees
+using GenericTensorNetworks.OMEinsum.OMEinsumContractionOrders.TreeWidthSolver
+
+using OptimalBranching
+using OptimalBranching.OptimalBranchingCore, OptimalBranching.OptimalBranchingMIS
 
 using Test
 using Random
@@ -48,19 +53,22 @@ Random.seed!(1234)
 end
 
 @testset "tree rethermalize" begin
-    g = random_regular_graph(100, 3)
-    net = GenericTensorNetwork(IndependentSet(g), optimizer=TreeSA())
-    order = net.code.eins
-    tensors = GenericTensorNetworks.generate_tensors(TropicalF32(1.0), net)
-    
-    n1 = neighbors(g, 1) ∪ [1]
-    n2 = union([neighbors(g, x) for x in n1]...) ∪ n1
-    subg, vmap = induced_subgraph(g, setdiff(1:100, n2))
-    sub_order = remove_tensors(order, tensors_removed(order, n2))
-    rt_order = rethermalize(sub_order, uniformsize(sub_order, 2))
+    for i in 1:10
+        n = 60
+        g = random_regular_graph(n, 3)
+        net = GenericTensorNetwork(IndependentSet(g), optimizer=TreeSA())
+        order = net.code.eins
+        tensors = GenericTensorNetworks.generate_tensors(TropicalF32(1.0), net)
+        
+        n1 = neighbors(g, 1) ∪ [1]
+        n2 = union([neighbors(g, x) for x in n1]...) ∪ n1
+        subg, vmap = induced_subgraph(g, setdiff(1:n, n2))
+        sub_order = remove_tensors(order, tensors_removed(order, n2))
+        rt_order = rethermalize(deepcopy(sub_order), uniformsize(sub_order, 2), 100.0:100.0, 1, 10, 25)
 
-    ri_order = reindex_tree!(deepcopy(sub_order), vmap)
-    rt_ri_order = rethermalize(ri_order, uniformsize(ri_order, 2))
-    
-    @test rt_order(tensors...)[] == sub_order(tensors...)[] == ri_order(tensors...)[] == rt_ri_order(tensors...)[] == solve(GenericTensorNetwork(IndependentSet(subg)), SizeMax())[]
+        ri_order = reindex_tree!(deepcopy(sub_order), vmap)
+        rt_ri_order = rethermalize(deepcopy(ri_order), uniformsize(ri_order, 2), 100.0:100.0, 1, 10, 25)
+        
+        @test rt_order(tensors...)[] == sub_order(tensors...)[] == ri_order(tensors...)[] == rt_ri_order(tensors...)[] == solve(GenericTensorNetwork(IndependentSet(subg)), SizeMax())[]
+    end
 end

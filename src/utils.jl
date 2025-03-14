@@ -1,10 +1,5 @@
 using OMEinsum: getixsv, getiyv, LeafString, flatten, _flatten, isleaf
 
-export eincode2order, eincode2graph, decompose, max_bag
-export get_subtree_pre, get_subtree_post, list_subtree, most_label_subtree
-export remove_tensors, remove_tensors!, tensors_removed, unsafe_flatten, rethermalize, reindex_tree!
-
-
 # transform optimized eincode to elimination order
 function eincode2order(code::NestedEinsum{L}) where {L}
     elimination_order = Vector{L}()
@@ -104,10 +99,8 @@ function remove_tensors!(code::DynamicNestedEinsum{LT}, tids::Vector{Int}) where
 end
 
 function remove_tensors(code::Union{DynamicNestedEinsum{LT}, SlicedEinsum{LT}}, tids::Vector{Int}) where LT
-    ccode = deepcopy(code)
-    (ccode isa SlicedEinsum) && (ccode = ccode.eins)
+    ccode = true_eincode(deepcopy(code))
     remove_tensors!(ccode, tids)
-    reform_tree!(ccode)
     return ccode
 end
 
@@ -147,10 +140,31 @@ function tensors_removed(code::Union{DynamicNestedEinsum{LT}, SlicedEinsum{LT}},
     return tids
 end
 
+function is_binary(code::DynamicNestedEinsum{LT}) where LT
+    for node in PreOrderDFS(code)
+        (node isa LeafString) && continue
+        length(node.eins.ixs) != 2 && return false
+    end
+    return true
+end
+
+@inline vec_replace!(old::Vector{T}, new::Vector{T}) where T = append!(empty!(old), new)
+
 # reformulate tree as binary tree
 function reform_tree!(code::DynamicNestedEinsum{LT}) where LT
     idx = Dict(OMEinsum._flatten(code))
-    _reform_tree!(code, idx)
+    isempty(idx) && return code
+
+    # a special case, when the root of the tree is non binary
+    reformed_code, _ = _reform_tree!(code, idx)
+
+    if reformed_code.eins.ixs != code.eins.ixs
+        vec_replace!(code.eins.ixs, reformed_code.eins.ixs)
+        vec_replace!(code.args, reformed_code.args)
+    end
+
+    @assert is_binary(code)
+
     return code
 end
 
@@ -178,11 +192,11 @@ function rethermalize(code::Union{DynamicNestedEinsum{LT}, SlicedEinsum{LT}}, si
     return optimize_code(code, size_dict, TreeSA(initializer = :specified, βs=βs, ntrials=ntrials, niters=niters, sc_target=sc_target)).eins
 end
 
-function reconfig_code(code::Union{DynamicNestedEinsum{LT}, SlicedEinsum{LT}}, vs::Vector{LT}, size_dict::Dict{LT, Int}, βs::StepRangeLen, ntrials::Int, niters::Int, sc_target::Int) where LT
-    tids = tensors_removed(code, vs)
-    new_code = remove_tensors(code, tids)
-    return rethermalize(new_code, size_dict, βs, ntrials, niters, sc_target)
-end
+# function reconfig_code(code::Union{DynamicNestedEinsum{LT}, SlicedEinsum{LT}}, vs::Vector{LT}, size_dict::Dict{LT, Int}, do_rethermalize::Bool, βs::StepRangeLen, ntrials::Int, niters::Int, sc_target::Int) where LT
+#     tids = tensors_removed(code, vs)
+#     new_code = remove_tensors(code, tensors_removed(code, vs))
+#     return do_rethermalize ? rethermalize(new_code, size_dict, βs, ntrials, niters, sc_target) : new_code
+# end
 
 # this part is about reindex the tree with a vertex map
 
@@ -196,7 +210,8 @@ end
 
 # reindex the tree with a vertex map
 function reindex_tree!(code::DynamicNestedEinsum{LT}, vmap::Vector{Int}) where LT
-    return _reindex_tree!(code, inverse_vmap(vmap))
+    _reindex_tree!(code, inverse_vmap(vmap))
+    return code
 end
 function _reindex_tree!(code::DynamicNestedEinsum{LT}, ivmap::Vector{Int}) where LT
     OMEinsum.isleaf(code) && return nothing

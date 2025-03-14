@@ -1,5 +1,5 @@
 # kernlize the graph, via reduction
-using OptimalBranchingCore: reduce_problem
+using OptimalBranching.OptimalBranchingCore: reduce_problem
 
 function kernelize(g::SimpleGraph, reducer::AbstractReducer)
     p_old = MISProblem(g)
