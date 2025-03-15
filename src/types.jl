@@ -33,3 +33,7 @@ function Base.show(io::IO, branch::SlicedBranch{T}) where T
     print(io, "code complexity: sc: $(cc.sc), tc: $(cc.tc)")
     print(io, "; fixed ones: $(branch.r)")
 end
+
+cc(branch::SlicedBranch) = contraction_complexity(branch.code, uniformsize(branch.code, 2))
+tc(branch::SlicedBranch) = cc(branch).tc
+sc(branch::SlicedBranch) = cc(branch).sc

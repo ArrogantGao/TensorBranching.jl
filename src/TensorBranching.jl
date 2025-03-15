@@ -15,7 +15,7 @@ export SlicedBranch
 export decompose
 
 # dynamic ob
-export kernelize, slice
+export kernelize, initialize_code, initialize_tensors, slice, contract
 export dynamic_ob_mis
 
 include("types.jl")
