@@ -16,12 +16,12 @@ TropicalNumbers = "b3a74e9c-7526-4576-a4eb-79c0d4c32334"
 [compat]
 AbstractTrees = "0.4.5"
 DocumenterTools = "0.1"
-GenericTensorNetworks = "3.1.0"
+GenericTensorNetworks = "3.2.0"
 Graphs = "1.12.0"
 OMEinsum = "0.8.4"
 TreeWidthSolver = "0.3.4"
 TropicalNumbers = "0.6.3"
-julia = "1.10"
+julia = "1.11"
 OptimalBranching = "0.1.1"
 
 [weakdeps]
