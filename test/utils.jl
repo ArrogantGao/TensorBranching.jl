@@ -1,10 +1,12 @@
 using TensorBranching
-using GenericTensorNetworks
 using Graphs, TropicalNumbers, OMEinsum
 
 using OptimalBranching
 using OptimalBranching.OptimalBranchingCore, OptimalBranching.OptimalBranchingMIS
 using OptimalBranching.OptimalBranchingMIS.EliminateGraphs
+
+using OptimalBranching.OptimalBranchingMIS.GenericTensorNetworks
+using OptimalBranching.OptimalBranchingMIS.GenericTensorNetworks: generate_tensors
 
 using Test
 using Random
@@ -37,7 +39,7 @@ using TensorBranching: remove_tensors, remove_tensors!, tensors_removed, unsafe_
         g = random_regular_graph(n, 3)
         net = GenericTensorNetwork(IndependentSet(g))
         order = net.code
-        tensors = GenericTensorNetworks.generate_tensors(TropicalF32(1.0), net)
+        tensors = generate_tensors(TropicalF32(1.0), net)
 
         # check if the result is still correct after removing for more than one rounds
         for _ in 1:4

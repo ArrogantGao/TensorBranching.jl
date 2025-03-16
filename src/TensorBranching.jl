@@ -1,10 +1,10 @@
 module TensorBranching
 
-using GenericTensorNetworks
-using Graphs, TropicalNumbers, OMEinsum, AbstractTrees, TreeWidthSolver
-
 using OptimalBranching
 using OptimalBranching.OptimalBranchingCore, OptimalBranching.OptimalBranchingMIS
+
+using OptimalBranching.OptimalBranchingMIS.GenericTensorNetworks
+using Graphs, TropicalNumbers, OMEinsum, AbstractTrees, TreeWidthSolver
 
 # types
 export AbstractRegionSelector, MaxIntersectRS

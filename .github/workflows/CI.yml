@@ -23,7 +23,7 @@ jobs:
       fail-fast: false
       matrix:
         version:
-          - '1.10'
+          - '1'
           # - 'nightly' # does not work with nightly, don't know why
         os:
           - ubuntu-latest

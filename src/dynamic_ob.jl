@@ -1,3 +1,5 @@
+using OptimalBranching.OptimalBranchingMIS.GenericTensorNetworks: generate_tensors
+
 # dynamic optimal branching for the maximum independent set problem
 # the algorithm has two phases, 1. kernelization 2. slicing via branching + tn contraction
 
@@ -45,7 +47,7 @@ function initialize_code(g::SimpleGraph, optimizer::CodeOptimizer)
 end
 
 function initialize_tensors(g::SimpleGraph, usecuda::Bool, tensor_type::Type)
-    tensors = GenericTensorNetworks.generate_tensors(tensor_type(1.0), IndependentSet(g))
+    tensors = generate_tensors(tensor_type(1.0), IndependentSet(g))
     usecuda && (tensors = gpu_tensors(tensors))
     return tensors
 end
