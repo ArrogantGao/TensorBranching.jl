@@ -1,12 +1,12 @@
 JL = julia --project
 
-default: init test
+default: init update test
 
 init:
-	$(JL) -e 'using Pkg; Pkg.precompile(); Pkg.activate("docs"); Pkg.precompile()'
+	$(JL) -e 'using Pkg; Pkg.precompile();'
 
 update:
-	$(JL) -e 'using Pkg; Pkg.update(); Pkg.precompile(); Pkg.activate("docs"); Pkg.update(); Pkg.precompile()'
+	$(JL) -e 'using Pkg; Pkg.update(); Pkg.precompile();'
 
 test:
 	$(JL) -e 'using Pkg; Pkg.test()'
