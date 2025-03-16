@@ -22,6 +22,7 @@ OMEinsum = "0.8.4"
 TreeWidthSolver = "0.3.4"
 TropicalNumbers = "0.6.3"
 julia = "1.10"
+OptimalBranching = "0.1.1"
 
 [weakdeps]
 CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
