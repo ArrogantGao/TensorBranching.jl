@@ -7,18 +7,34 @@ abstract type AbstractRegionSelector end
     loss::Symbol = :num_uniques # what else methods? may consider more complicated ones
 end
 
+abstract type AbstractBrancher end
+
+@kwdef struct GreedyBrancher <: AbstractBrancher
+    loss::Symbol = :sc_score
+    setcover_solver::AbstractSetCoverSolver = IPSolver()
+end
+
+@kwdef struct FixedPointBrancher <: AbstractBrancher
+    measure::Symbol = :sc_measure
+    setcover_solver::AbstractSetCoverSolver = IPSolver()
+end
+
+abstract type AbstractRefiner end
+
+@kwdef struct TreeSARefiner <: AbstractRefiner
+    βs::StepRangeLen = 100.0:100.0 # range of βs for the rethermalization
+    ntrials::Int = 1
+    niters::Int = 100
+end
 
 abstract type AbstractSlicer end
 
 @kwdef struct ContractionTreeSlicer <: AbstractSlicer
     sc_target::Int = 30
-    loss::Symbol = :sc_score
-    βs::StepRangeLen = 100.0:100.0 # range of βs for the rethermalization
-    ntrials::Int = 1
-    niters::Int = 100
     region_selector::AbstractRegionSelector = MaxIntersectRS() # select the region to branch, what else methods?
     table_solver::AbstractTableSolver = TensorNetworkSolver()
-    setcover_solver::AbstractSetCoverSolver = IPSolver()
+    brancher::AbstractBrancher = GreedyBrancher()
+    refiner::AbstractRefiner = TreeSARefiner()
 end
 
 struct SlicedBranch{T}

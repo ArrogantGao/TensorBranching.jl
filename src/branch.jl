@@ -72,9 +72,15 @@ function optimal_branches(g::SimpleGraph{Int}, code::DynamicNestedEinsum{Int}, s
     losses = slicer_loss(g, code, rvs, slicer, size_dict)
 
     ## calculate the loss and select the best ones
-    optimal_branches_ids = weighted_minimum_set_cover(slicer.setcover_solver, losses, subsets, length(tbl.table))
+    optimal_branches_ids = set_cover(slicer.setcover_solver, slicer.branch_strategy, losses, subsets, length(tbl.table))
 
-    (verbose ≥ 2) && (@info "length of optimal branches: $(length(optimal_branches_ids))")
+    (verbose ≥ 2) && begin
+        @info "length of optimal branches: $(length(optimal_branches_ids))"
+        for i in optimal_branches_ids
+            @info "optimal branch $i: $(rvs[i])"
+        end
+    end
+
 
     branches = Vector{SlicedBranch{Int}}()
     for i in optimal_branches_ids
@@ -86,6 +92,18 @@ function optimal_branches(g::SimpleGraph{Int}, code::DynamicNestedEinsum{Int}, s
     end
 
     return branches
+end
+
+function set_cover(solver::AbstractSetCoverSolver, strategy::Symbol, losses::Vector{Float64}, subsets::Vector{Vector{Int}}, n_clauses::Int)
+    if strategy == :greedy
+        # greedy means that we simply consider the results with the summation sum of losses
+        return weighted_minimum_set_cover(solver, losses, subsets, n_clauses)
+    elseif strategy == :fixed_point
+        # a fixed point iteration is used to minimize gamma
+        return fixed_point_set_cover(losses, subsets, n_clauses)
+    else
+        error("Strategy $(strategy) not implemented")
+    end
 end
 
 function slicer_loss(g::SimpleGraph{Int}, code::DynamicNestedEinsum{Int}, rvs::Vector{Vector{Int}}, slicer::ContractionTreeSlicer, size_dict::Dict{Int, Int})

@@ -25,6 +25,7 @@ export saveslices, loadslices
 
 include("types.jl")
 include("utils.jl")
+include("decompose.jl")
 
 # dynamic ob
 include("dynamic_ob.jl")
