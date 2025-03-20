@@ -58,7 +58,10 @@ function generate_subsets(g::SimpleGraph{Int}, tbl::BranchingTable, region::Vect
     return subsets, rvs, fixed_ones
 end
 
-function optimal_branches(g::SimpleGraph{Int}, code::DynamicNestedEinsum{Int}, slicer::ContractionTreeSlicer, region::Vector{Int}, size_dict::Dict{Int, Int}, verbose::Int)
+function optimal_branches(g::SimpleGraph{Int}, code::DynamicNestedEinsum{Int}, slicer::ContractionTreeSlicer, reducer::AbstractReducer, region::Vector{Int}, size_dict::Dict{Int, Int}, verbose::Int)
+
+    cc = contraction_complexity(code, size_dict)
+    (verbose ≥ 2) && (@info "solving g: $(nv(g)), $(ne(g)), code complexity: tc = $(cc.tc), sc = $(cc.sc)")
 
     p = MISProblem(g)
     tbl = branching_table(p, slicer.table_solver, region)
@@ -66,54 +69,48 @@ function optimal_branches(g::SimpleGraph{Int}, code::DynamicNestedEinsum{Int}, s
 
     (verbose ≥ 2) && (@info "generating candidates, table: $(length(tbl.table)), candidates: $(length(rvs))")
 
-    # codes = [remove_tensors(code, tensors_removed(code, rv)) for rv in rvs]
-    # losses = [slicer_loss(g, code, codes[i], slicer, size_dict) for i in 1:length(rvs)]
-
-    losses = slicer_loss(g, code, rvs, slicer, size_dict)
+    losses = slicer_loss(g, code, rvs, slicer.brancher, slicer.sc_target, size_dict)
 
     ## calculate the loss and select the best ones
-    optimal_branches_ids = set_cover(slicer.setcover_solver, slicer.branch_strategy, losses, subsets, length(tbl.table))
+    optimal_branches_ids = set_cover(slicer.brancher, losses, subsets, length(tbl.table))
 
     (verbose ≥ 2) && begin
         @info "length of optimal branches: $(length(optimal_branches_ids))"
         for i in optimal_branches_ids
-            @info "optimal branch $i: $(rvs[i])"
+            @info "optimal branch $i, removed vertices: $(rvs[i]), fixed ones: $(fixed_ones[i])"
         end
     end
 
-
     branches = Vector{SlicedBranch{Int}}()
     for i in optimal_branches_ids
-        newcode = remove_tensors(code, tensors_removed(code, rvs[i]))
-        newcode = rethermalize(newcode, size_dict, slicer.βs, slicer.ntrials, slicer.niters, slicer.sc_target)
-        gi, vmapi = induced_subgraph(g, setdiff(1:nv(g), rvs[i]))
-        !iszero(nv(gi)) && reindex_tree!(newcode, vmapi)
-        push!(branches, SlicedBranch(gi, newcode, fixed_ones[i]))
+        branch = generate_branch(g, code, rvs[i], fixed_ones[i], slicer, reducer, size_dict)
+
+        (verbose ≥ 2) && (@info "branching id = $i, g: $(nv(branch.g)), $(ne(branch.g))")
+        (verbose ≥ 2) && (cc_ik = complexity(branch); @info "rethermalized code complexity: tc = $(cc_ik.tc), sc = $(cc_ik.sc)")
+
+        push!(branches, branch)
     end
 
     return branches
 end
 
-function set_cover(solver::AbstractSetCoverSolver, strategy::Symbol, losses::Vector{Float64}, subsets::Vector{Vector{Int}}, n_clauses::Int)
-    if strategy == :greedy
-        # greedy means that we simply consider the results with the summation sum of losses
-        return weighted_minimum_set_cover(solver, losses, subsets, n_clauses)
-    elseif strategy == :fixed_point
-        # a fixed point iteration is used to minimize gamma
-        return fixed_point_set_cover(losses, subsets, n_clauses)
+function slicer_loss(g::SimpleGraph{Int}, code::DynamicNestedEinsum{Int}, rvs::Vector{Vector{Int}}, brancher::GreedyBrancher, sc_target::Int, size_dict::Dict{Int, Int})
+    if brancher.loss == :sc_score
+        return sc_score(sc_target, code, rvs, size_dict)
     else
-        error("Strategy $(strategy) not implemented")
+        error("Loss function $(brancher.loss) not implemented")
     end
 end
 
-function slicer_loss(g::SimpleGraph{Int}, code::DynamicNestedEinsum{Int}, rvs::Vector{Vector{Int}}, slicer::ContractionTreeSlicer, size_dict::Dict{Int, Int})
-    if slicer.loss == :sc_score
-        return sc_score(slicer.sc_target, code, rvs, size_dict)
+function slicer_loss(g::SimpleGraph{Int}, code::DynamicNestedEinsum{Int}, rvs::Vector{Vector{Int}}, brancher::FixedPointBrancher, sc_target::Int, size_dict::Dict{Int, Int})
+    if brancher.measure == :sc_measure
+        return sc_measure(sc_target, code, rvs, size_dict)
     else
-        error("Loss function $(slicer.loss) not implemented")
+        error("Loss function $(brancher.loss) not implemented")
     end
 end
 
+# sc_score is the sum of the scores of the removed vertices, each of the tensors with size larger than sc_target contributes 2^(t - sc_target) - 1 to the score, where t is size of the tensor
 function sc_score(sc_target::Int, code::DynamicNestedEinsum{Int}, rvs::Vector{Vector{Int}}, size_dict::Dict{Int, Int})
     scores = ones(Float64, length(rvs))
 
@@ -128,4 +125,55 @@ function sc_score(sc_target::Int, code::DynamicNestedEinsum{Int}, rvs::Vector{Ve
     end
 
     return scores
+end
+
+# sc_measure is similar to the D3 measure, where each tensor is counted by (t - sc_target)
+function sc_measure(sc_target::Int, code::DynamicNestedEinsum{Int}, rvs::Vector{Vector{Int}}, size_dict::Dict{Int, Int})
+    delta_rho = ones(Float64, length(rvs))
+
+    large_tensors = list_subtree(code, size_dict, sc_target)
+    large_tensors_iys = [Set(t.eins.iy) for t in large_tensors]
+
+    for (i, rv) in enumerate(rvs)
+        for lt_iy in large_tensors_iys
+            delta_rho[i] += reduce((y, x) -> y += (x ∈ lt_iy), rv, init = 0)
+        end
+    end
+
+    return delta_rho
+end
+
+function set_cover(solver::GreedyBrancher, losses::Vector{Float64}, subsets::Vector{Vector{Int}}, n_clauses::Int)
+    return weighted_minimum_set_cover(solver.setcover_solver, losses, subsets, n_clauses)
+end
+
+function set_cover(solver::FixedPointBrancher, losses::Vector{Float64}, subsets::Vector{Vector{Int}}, n_clauses::Int)
+    return fixed_point_set_cover(solver.setcover_solver, losses, subsets, n_clauses)
+end
+
+function fixed_point_set_cover(solver::AbstractSetCoverSolver, losses::Vector{Float64}, subsets::Vector{Vector{Int}}, n_clauses::Int)
+    cx_old = cx = solver.γ0
+    local picked_scs
+    for i = 1:solver.max_itr
+        weights = 1 ./ cx_old .^ losses
+        picked_scs = weighted_minimum_set_cover(solver, weights, subsets, n_clauses)
+        cx = OptimalBranching.OptimalBranchingCore.complexity_bv(losses[picked_scs])
+        cx ≈ cx_old && break  # convergence
+        cx_old = cx
+    end
+    return picked_scs
+end
+
+function generate_branch(g::SimpleGraph{Int}, code::DynamicNestedEinsum{Int}, removed_vertices::Vector{Int}, r0::Int, slicer::ContractionTreeSlicer, reducer::AbstractReducer, size_dict::Dict{Int, Int})
+    g_i, vmap_i = induced_subgraph(g, setdiff(1:nv(g), removed_vertices))
+    g_ik, r_ik, vmap_ik = kernelize(g_i, reducer, vmap = vmap_i)
+
+    nv(g_ik) == 0 && return SlicedBranch(g_ik, nothing, r_ik + r0)
+
+    sc0 = contraction_complexity(code, size_dict).sc
+
+    code_ik = update_code(g_ik, code, vmap_ik)        
+    re_code_ik = refine(code_ik, size_dict, slicer.refiner, slicer.sc_target, sc0)
+
+    return SlicedBranch(g_ik, re_code_ik, r_ik + r0)
 end

@@ -143,14 +143,8 @@ function rethermalize(code::Union{DynamicNestedEinsum{LT}, SlicedEinsum{LT}}, si
     return optimize_code(code, size_dict, TreeSA(initializer = :specified, βs=βs, ntrials=ntrials, niters=niters, sc_target=sc_target)).eins
 end
 
-# function reconfig_code(code::Union{DynamicNestedEinsum{LT}, SlicedEinsum{LT}}, vs::Vector{LT}, size_dict::Dict{LT, Int}, do_rethermalize::Bool, βs::StepRangeLen, ntrials::Int, niters::Int, sc_target::Int) where LT
-#     tids = tensors_removed(code, vs)
-#     new_code = remove_tensors(code, tensors_removed(code, vs))
-#     return do_rethermalize ? rethermalize(new_code, size_dict, βs, ntrials, niters, sc_target) : new_code
-# end
 
 # this part is about reindex the tree with a vertex map
-
 function inverse_vmap(vmap::Vector{Int})
     ivmap = zeros(Int, maximum(vmap))
     for (i, v) in enumerate(vmap)
@@ -189,6 +183,3 @@ end
 function true_eincode(code::Union{DynamicNestedEinsum{LT}, SlicedEinsum{LT}}) where LT
     return code isa SlicedEinsum ? code.eins : code
 end
-
-
-# TODO: map the contraction order of the original graph to the new graph by using the same elimination order, if we want to kernelize the graph after each branching step

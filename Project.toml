@@ -10,14 +10,9 @@ Graphs = "86223c79-3864-5bf0-83f7-82e725a168b6"
 JLD2 = "033835bb-8acc-5ee8-8aae-3f567f8a3819"
 OMEinsum = "ebe7aa44-baf0-506c-a96f-8464559b3922"
 OptimalBranching = "96e750e4-2b4b-404e-96bc-6769eb2ae924"
+Suppressor = "fd094767-a336-5f1f-9728-57cf17d0bbfb"
 TreeWidthSolver = "7d267fc5-9ace-409f-a54c-cd2374872a55"
 TropicalNumbers = "b3a74e9c-7526-4576-a4eb-79c0d4c32334"
-
-[weakdeps]
-CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
-
-[extensions]
-CUDAExt = ["CUDA"]
 
 [compat]
 AbstractTrees = "0.4.5"
@@ -26,6 +21,7 @@ Graphs = "1.12.0"
 JLD2 = "0.5.11"
 OMEinsum = "0.8.4"
 OptimalBranching = "0.1.1"
+Suppressor = "0.2.8"
 TreeWidthSolver = "0.3.4"
 TropicalNumbers = "0.6.3"
 julia = "1.11"

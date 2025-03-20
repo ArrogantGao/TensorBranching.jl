@@ -22,9 +22,20 @@ end
 abstract type AbstractRefiner end
 
 @kwdef struct TreeSARefiner <: AbstractRefiner
-    βs::StepRangeLen = 100.0:100.0 # range of βs for the rethermalization
+    βs::StepRangeLen = 1000.0:1000.0 # range of βs for the rethermalization
     ntrials::Int = 1
-    niters::Int = 100
+    niters::Int = 200
+    max_rounds::Int = 5
+end
+
+function refine(code::DynamicNestedEinsum{LT}, size_dict::Dict{LT, Int}, refiner::TreeSARefiner, sc_target::Int, sc0::Number) where LT
+    refined_code = code
+    for i in 1:refiner.max_rounds
+        refined_code = @suppress rethermalize(refined_code, size_dict, refiner.βs, refiner.ntrials, refiner.niters, sc_target)
+        (contraction_complexity(refined_code, size_dict).sc ≤ sc0) && return refined_code
+    end
+    @warn "Refiner did not improve the code, got $(contraction_complexity(refined_code, size_dict).sc) instead of $sc0"
+    return refined_code
 end
 
 abstract type AbstractSlicer end
@@ -39,7 +50,7 @@ end
 
 struct SlicedBranch{T}
     g::SimpleGraph{T}
-    code::DynamicNestedEinsum{T}
+    code::Union{DynamicNestedEinsum{T}, Nothing}
     r::Int
 end
 function Base.show(io::IO, branch::SlicedBranch{T}) where T
@@ -50,6 +61,10 @@ function Base.show(io::IO, branch::SlicedBranch{T}) where T
     print(io, "; fixed ones: $(branch.r)")
 end
 
-cc(branch::SlicedBranch) = contraction_complexity(branch.code, uniformsize(branch.code, 2))
-tc(branch::SlicedBranch) = cc(branch).tc
-sc(branch::SlicedBranch) = cc(branch).sc
+function complexity(branch::SlicedBranch)
+    code = branch.code
+    isnothing(code) && return OMEinsum.OMEinsumContractionOrders.ContractionComplexity(0.0, 0.0, 0.0)
+    return contraction_complexity(code, uniformsize(code, 2))
+end
+tc(branch::SlicedBranch) = complexity(branch).tc
+sc(branch::SlicedBranch) = complexity(branch).sc

@@ -1,13 +1,17 @@
 # kernlize the graph, via reduction
-using OptimalBranching.OptimalBranchingCore: reduce_problem
+using OptimalBranching.OptimalBranchingMIS: reduce_graph
 
-function kernelize(g::SimpleGraph, reducer::AbstractReducer)
-    p_old = MISProblem(g)
-    r = MaxSize(0)
+function kernelize(g::SimpleGraph, reducer::AbstractReducer; verbose::Int = 0, vmap::Vector{Int} = collect(1:nv(g)))
+    (verbose ≥ 2) && (@info "kernelizing graph: $(nv(g)) vertices, $(ne(g)) edges")
+    r = 0
     while true
-        rp, rv = reduce_problem(MaxSize, p_old, reducer)
-        r *= rv
-        (p_old == rp) && return (rp.g, TropicalF32(r.size))
-        p_old = rp
+        res = reduce_graph(g, reducer) # res = (g_new, r_new, vmap_new)
+        vmap = vmap[res[3]]
+        r += res[2]
+        if g == res[1]
+            (verbose ≥ 2) && (@info "kernelized graph: $(nv(g)) vertices, $(ne(g)) edges")
+            return (g, r, vmap)
+        end
+        g = res[1]
     end
 end

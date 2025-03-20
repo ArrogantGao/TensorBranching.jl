@@ -79,9 +79,14 @@ function order2eincode(g::SimpleGraph{Int}, eo::Vector{Int})
             push!(trees, tree)
         end
     end
-
     tree = reduce((x,y) -> ContractionTree(x, y), trees)
     code = parse_eincode(incidence_list, tree, vertices = collect(1:length(ixs))) # this code is OMEinsumContractionOrders.NestedEinsum, not OMEinsum.NestedEinsum
 
     return decorate(code)
+end
+
+function update_code(g_new::SimpleGraph{Int}, code_old::NestedEinsum, vmap::Vector{Int})
+    eo_old = eincode2order(code_old)
+    eo_new = update_order(eo_old, vmap)
+    return order2eincode(g_new, eo_new)
 end
