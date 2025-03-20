@@ -71,6 +71,7 @@ function order2eincode(g::SimpleGraph{Int}, eo::Vector{Int})
     trees = Vector{Union{ContractionTree, Int}}()
     for sub_vs in connected_components(g)
         if length(sub_vs) == 1
+            # a special corner case for the mis problem: the connected component is a single vertex has no edges
             push!(trees, incidence_list.e2v[sub_vs[1]][1])
         else
             grouped_eo = [[i] for i in eo if i in sub_vs]
