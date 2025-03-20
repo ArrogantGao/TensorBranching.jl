@@ -59,8 +59,7 @@ end
     end
 end
 
-@testset "corner case: disconnected graph" begin
-
+@testset "corner case: disconnected graph have 1 vertex" begin
     g = random_regular_graph(30, 3)
     removed_vertices = neighbors(g, 1)
     g_new, vmap = induced_subgraph(g, setdiff(1:nv(g), removed_vertices))
@@ -68,10 +67,11 @@ end
     eo = eincode2order(code)
     eo_new = update_order(eo, vmap)
     code_new = order2eincode(g_new, eo_new)
-   
     @test !is_connected(g_new)
     @test solve(GenericTensorNetwork(IndependentSet(g_new)), SizeMax()) ≈ solve(GenericTensorNetwork(IndependentSet(g_new), code_new, Dict{Int, Int}()), SizeMax())
+end
 
+@testset "corner case: disconnected graph have 2 vertices" begin
     g = random_regular_graph(30, 3)
     vs = [1, neighbors(g, 1)[1]]
     removed_vertices = OptimalBranchingMIS.open_neighbors(g, vs)
