@@ -11,7 +11,7 @@ using JLD2
 # types
 export AbstractRegionSelector, MaxIntersectRS
 export AbstractSlicer, ContractionTreeSlicer
-export AbstractRefiner, TreeSARefiner
+export AbstractRefiner, TreeSARefiner, ReoptimizeRefiner
 export AbstractBrancher, GreedyBrancher, FixedPointBrancher
 export SlicedBranch
 
@@ -19,7 +19,7 @@ export SlicedBranch
 export decompose
 
 # dynamic ob
-export kernelize, initialize_code, slice, contract
+export kernelize, initialize_code, slice, contract_slices
 export dynamic_ob_mis
 
 #io

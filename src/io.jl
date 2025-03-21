@@ -1,9 +1,9 @@
-function saveslices(slices::Vector{SlicedBranch{TS}}, tensors::Vector{TA}, r::Int64, filename::String) where {TS,TA}
-    @save filename slices tensors r
+function saveslices(slices::Vector{SlicedBranch{TS}}, filename::String) where {TS}
+    @save filename slices
     return nothing
 end
 
 function loadslices(filename::String)
-    slices, tensors, r = load(filename, "slices", "tensors", "r")
-    return slices, tensors, r
+    slices = load(filename, "slices")
+    return slices
 end

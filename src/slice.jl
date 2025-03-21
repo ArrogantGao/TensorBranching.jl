@@ -16,6 +16,7 @@ function _slice!(slices::Vector{SlicedBranch{Int}}, branch::SlicedBranch{Int}, s
 
     if (contraction_complexity(branch.code, size_dict).sc ≤ slicer.sc_target)
         push!(slices, branch)
+        (verbose ≥ 2) && (@info "current num of slices: $(length(slices))")
         return nothing
     end
 

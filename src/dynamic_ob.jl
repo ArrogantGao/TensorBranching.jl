@@ -27,13 +27,13 @@ function dynamic_ob_mis(g::SimpleGraph, code::DynamicNestedEinsum, r::Int; reduc
     (verbose ≥ 1) && (@info "branching result: \n num of branches: $(length(branches)). \n max sc: $(maximum(sc.(branches))). \n total tc: $(log2(sum(2 .^ tc.(branches)))).")
 
     # 4. contract the slices
-    res = contract(branches, element_type, usecuda)
+    res = contract_slices(branches, element_type, usecuda)
 
     # 5. return the maximum results
     return maximum(res)
 end
 
-function contract(branches::Vector{SlicedBranch{T1}}, element_type::Type, usecuda::Bool) where {T1}
+function contract_slices(branches::Vector{SlicedBranch{T1}}, element_type::Type, usecuda::Bool) where {T1}
     res = Int[]
     for branch in branches
         if nv(branch.g) == 0

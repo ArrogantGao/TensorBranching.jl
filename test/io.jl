@@ -1,7 +1,5 @@
 using TensorBranching
-using TropicalNumbers
-using Graphs
-using OMEinsum
+using Graphs, OMEinsum, OptimalBranching.OptimalBranchingMIS, TropicalNumbers
 using Test
 
 @testset "io" begin
@@ -10,15 +8,13 @@ using Test
 
     # create some slices and tensors
     g = random_regular_graph(30, 3)
-    tensors = initialize_tensors(g, false, TropicalF32)
     code = initialize_code(g, TreeSA())
     r = 3
-    slices = slice(SlicedBranch(g, code, r), ContractionTreeSlicer(), 0)
-    saveslices(slices, tensors, r, filename)
+    slices = slice(SlicedBranch(g, code, r), ContractionTreeSlicer(sc_target = 3), XiaoReducer())
+    saveslices(slices, filename)
 
     # load the slices and tensors
-    slices_loaded, tensors_loaded, r_loaded = loadslices(filename)
+    slices_loaded = loadslices(filename)
     @test length(slices_loaded) == length(slices)
-    @test tensors_loaded == tensors
-    @test r_loaded == r
+    @test contract_slices(slices_loaded, TropicalF32, false) == contract_slices(slices, TropicalF32, false)
 end

@@ -23,7 +23,7 @@ abstract type AbstractRefiner end
 
 @kwdef struct TreeSARefiner <: AbstractRefiner
     βs::StepRangeLen = 1000.0:1000.0 # range of βs for the rethermalization
-    ntrials::Int = 1
+    ntrials::Int = 10
     niters::Int = 200
     max_rounds::Int = 5
 end
@@ -32,9 +32,19 @@ function refine(code::DynamicNestedEinsum{LT}, size_dict::Dict{LT, Int}, refiner
     refined_code = code
     for i in 1:refiner.max_rounds
         refined_code = @suppress rethermalize(refined_code, size_dict, refiner.βs, refiner.ntrials, refiner.niters, sc_target)
-        (contraction_complexity(refined_code, size_dict).sc ≤ sc0) && return refined_code
+        (contraction_complexity(refined_code, size_dict).sc < sc0) && return refined_code
     end
-    @warn "Refiner did not improve the code, got $(contraction_complexity(refined_code, size_dict).sc) instead of $sc0"
+    @warn "Refiner did not improve the code, original sc = $sc0, got $(contraction_complexity(refined_code, size_dict).sc)"
+    return refined_code
+end
+
+@kwdef struct ReoptimizeRefiner <: AbstractRefiner
+    optimizer::CodeOptimizer = TreeSA()
+end
+
+function refine(code::DynamicNestedEinsum{LT}, size_dict::Dict{LT, Int}, refiner::ReoptimizeRefiner, sc_target::Int, sc0::Number) where LT
+    refined_code = @suppress true_eincode(optimize_code(code, size_dict, refiner.optimizer))
+    (contraction_complexity(refined_code, size_dict).sc > sc0) && (@warn "Refiner did not improve the code, got $(contraction_complexity(refined_code, size_dict).sc) instead of $sc0")
     return refined_code
 end
 
