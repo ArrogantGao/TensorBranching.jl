@@ -74,7 +74,14 @@ function order2eincode(g::SimpleGraph{Int}, eo::Vector{Int})
             # a special corner case for the mis problem: the connected component is a single vertex has no edges
             push!(trees, incidence_list.e2v[sub_vs[1]][1])
         else
-            grouped_eo = [[i] for i in eo if i in sub_vs]
+            sub_g, sub_vmap = induced_subgraph(g, sub_vs)
+            sub_ivmap = inverse_vmap_dict(sub_vmap)
+            sub_eo = [sub_ivmap[i] for i in eo if i in sub_vs]
+            tree = decomposition_tree(sub_g, sub_eo)
+            grouped_eo = EliminationOrder(tree).order
+
+            map!(x -> map!(y -> sub_vmap[y], x, x), grouped_eo, grouped_eo)
+
             tree = eo2ct(grouped_eo, incidence_list, [1.0 for _ in 1:length(eo)], 0.0, 0.0, 1)
             push!(trees, tree)
         end
