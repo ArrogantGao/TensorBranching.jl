@@ -64,7 +64,8 @@ function update_tree(g_new::SimpleGraph{Int}, eo_old::Vector{Int}, vmap::Vector{
 end
 
 # reconstruct the contraction order from the grouped elimination order
-function order2eincode(g::SimpleGraph{Int}, eo::Vector{Int})
+# if set use_tree to true, the decomposition tree will be constructed to get a better elimination order
+function order2eincode(g::SimpleGraph{Int}, eo::Vector{Int}; use_tree::Bool = true)
     rcode = rawcode(IndependentSet(g))
     ixs = getixsv(rcode)
     incidence_list = IncidenceList(Dict([i=>ix for (i, ix) in enumerate(ixs)]))
@@ -74,13 +75,17 @@ function order2eincode(g::SimpleGraph{Int}, eo::Vector{Int})
             # a special corner case for the mis problem: the connected component is a single vertex has no edges
             push!(trees, incidence_list.e2v[sub_vs[1]][1])
         else
-            sub_g, sub_vmap = induced_subgraph(g, sub_vs)
-            sub_ivmap = inverse_vmap_dict(sub_vmap)
-            sub_eo = [sub_ivmap[i] for i in eo if i in sub_vs]
-            tree = decomposition_tree(sub_g, sub_eo)
-            grouped_eo = EliminationOrder(tree).order
+            if use_tree
+                sub_g, sub_vmap = induced_subgraph(g, sub_vs)
+                sub_ivmap = inverse_vmap_dict(sub_vmap)
+                sub_eo = [sub_ivmap[i] for i in eo if i in sub_vs]
+                tree = decomposition_tree(sub_g, sub_eo)
+                grouped_eo = EliminationOrder(tree).order
 
-            map!(x -> map!(y -> sub_vmap[y], x, x), grouped_eo, grouped_eo)
+                map!(x -> map!(y -> sub_vmap[y], x, x), grouped_eo, grouped_eo)
+            else
+                grouped_eo = [[i] for i in eo if i in sub_vs]
+            end
 
             tree = eo2ct(grouped_eo, incidence_list, [1.0 for _ in 1:length(eo)], 0.0, 0.0, 1)
             push!(trees, tree)

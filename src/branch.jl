@@ -74,12 +74,7 @@ function optimal_branches(g::SimpleGraph{Int}, code::DynamicNestedEinsum{Int}, s
     ## calculate the loss and select the best ones
     optimal_branches_ids = set_cover(slicer.brancher, losses, subsets, length(tbl.table))
 
-    (verbose ≥ 2) && begin
-        @info "length of optimal branches: $(length(optimal_branches_ids))"
-        for i in optimal_branches_ids
-            @info "optimal branch $i, removed vertices: $(rvs[i]), fixed ones: $(fixed_ones[i])"
-        end
-    end
+    (verbose ≥ 2) && (@info "length of optimal branches: $(length(optimal_branches_ids))")
 
     branches = Vector{SlicedBranch{Int}}()
     for i in optimal_branches_ids

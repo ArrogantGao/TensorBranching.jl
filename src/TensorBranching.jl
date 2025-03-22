@@ -3,20 +3,22 @@ module TensorBranching
 using OptimalBranching
 using OptimalBranching.OptimalBranchingCore, OptimalBranching.OptimalBranchingMIS
 
-using OptimalBranching.OptimalBranchingMIS.GenericTensorNetworks
+using GenericTensorNetworks
 using Graphs, TropicalNumbers, OMEinsum, AbstractTrees, TreeWidthSolver
-using Suppressor
-using JLD2
+using Suppressor, JLD2 
 
 # types
 export AbstractRegionSelector, MaxIntersectRS
 export AbstractSlicer, ContractionTreeSlicer
 export AbstractRefiner, TreeSARefiner, ReoptimizeRefiner
 export AbstractBrancher, GreedyBrancher, FixedPointBrancher
+export AbstractReducer, MISReducer, XiaoReducer, TensorNetworkReducer
+
 export SlicedBranch
 
 # tree decomposition
-export decompose
+export decompose, max_bag
+export order2eincode, eincode2order
 
 # dynamic ob
 export kernelize, initialize_code, slice, contract_slices
