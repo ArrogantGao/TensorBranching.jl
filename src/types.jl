@@ -53,6 +53,7 @@ abstract type AbstractSlicer end
 
 @kwdef struct ContractionTreeSlicer <: AbstractSlicer
     sc_target::Int = 30
+    search_order::Symbol = :bfs # :bfs or :dfs
     region_selector::AbstractRegionSelector = MaxIntersectRS() # select the region to branch, what else methods?
     table_solver::AbstractTableSolver = TensorNetworkSolver()
     brancher::AbstractBrancher = GreedyBrancher()
