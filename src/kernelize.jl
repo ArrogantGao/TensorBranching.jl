@@ -10,17 +10,19 @@ function kernelize(g::SimpleGraph, reducer::AbstractReducer; verbose::Int = 0, v
         r += res[2]
         if g == res[1]
             (verbose ≥ 2) && (@info "kernelized graph: $(nv(g)) vertices, $(ne(g)) edges")
-            return (g, r, vmap)
+            return (g, r, vmap, reducer)
         end
         g = res[1]
     end
 end
 
+# this will change the reducer
 function kernelize(g::SimpleGraph, reducer::TensorNetworkReducer; verbose::Int = 0, vmap::Vector{Int} = collect(1:nv(g)))
     (verbose ≥ 2) && (@info "kernelizing graph: $(nv(g)) vertices, $(ne(g)) edges")
     r = 0
 
     vmap_0 = vmap
+    reducer = deepcopy(reducer)
 
     while true
         res = reduce_graph(g, reducer, vmap_0 = vmap_0) # res = (g_new, r_new, vmap_new)
@@ -29,7 +31,7 @@ function kernelize(g::SimpleGraph, reducer::TensorNetworkReducer; verbose::Int =
         r += res[2]
         if g == res[1]
             (verbose ≥ 2) && (@info "kernelized graph: $(nv(g)) vertices, $(ne(g)) edges")
-            return (g, r, vmap)
+            return (g, r, vmap, reducer)
         end
         g = res[1]
     end

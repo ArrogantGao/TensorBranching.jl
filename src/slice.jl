@@ -9,10 +9,10 @@ function slice(branch::SlicedBranch, slicer::AbstractSlicer, reducer::AbstractRe
         slices = Vector{SlicedBranch{Int}}()
         _slice_dfs!(slices, branch, slicer, reducer, size_dict, verbose)
     elseif slicer.search_order == :bfs
-        unfinished_slices = Vector{SlicedBranch{Int}}()
+        unfinished_slices = Vector{Tuple{SlicedBranch{Int}, AbstractReducer}}()
         finished_slices = Vector{SlicedBranch{Int}}()
-        push!(unfinished_slices, branch)
-        slices = _slice_bfs!(unfinished_slices, finished_slices, slicer, reducer, size_dict, verbose)
+        push!(unfinished_slices, (branch, reducer))
+        slices = _slice_bfs!(unfinished_slices, finished_slices, slicer, size_dict, verbose)
     else
         error("search_order must be :dfs or :bfs")
     end
@@ -34,39 +34,39 @@ function _slice_dfs!(slices::Vector{SlicedBranch{Int}}, branch::SlicedBranch{Int
 
     # res is a vector of (mask, code), each corresponding to a slice
     region, loss = ob_region(branch.g, branch.code, slicer, slicer.region_selector, size_dict, verbose)
-    branches = optimal_branches(branch.g, branch.code, slicer, reducer, region, size_dict, verbose)
+    brs = optimal_branches(branch.g, branch.code, slicer, reducer, region, size_dict, verbose)
 
-    for newbranch in branches
-        _slice_dfs!(slices, SlicedBranch(newbranch.g, newbranch.code, branch.r + newbranch.r), slicer, reducer, size_dict, verbose)
+    for (new_branch, new_reducer) in brs
+        _slice_dfs!(slices, SlicedBranch(new_branch.g, new_branch.code, branch.r + new_branch.r), slicer, new_reducer, size_dict, verbose)
     end
 
     return nothing
 end
 
-function _slice_bfs!(unfinished_slices::Vector{SlicedBranch{Int}}, finished_slices::Vector{SlicedBranch{Int}}, slicer::AbstractSlicer, reducer::AbstractReducer, size_dict::Dict{Int, Int}, verbose::Int)
+function _slice_bfs!(unfinished_slices::Vector{Tuple{SlicedBranch{Int}, AbstractReducer}}, finished_slices::Vector{SlicedBranch{Int}}, slicer::AbstractSlicer, size_dict::Dict{Int, Int}, verbose::Int)
 
     isempty(unfinished_slices) && return finished_slices
 
     if verbose ≥ 1
-        scs = [contraction_complexity(branch.code, size_dict).sc for branch in unfinished_slices]
+        scs = [contraction_complexity(branch.code, size_dict).sc for (branch, reducer) in unfinished_slices]
         @info "current num of unfinished slices: $(length(unfinished_slices)), scs: $scs"
         @info "current num of finished slices: $(length(finished_slices))"
     end
 
     n = length(unfinished_slices)
     for i in 1:n
-        branch = popfirst!(unfinished_slices)
+        branch, reducer = popfirst!(unfinished_slices)
         region, loss = ob_region(branch.g, branch.code, slicer, slicer.region_selector, size_dict, verbose)
-        branches = optimal_branches(branch.g, branch.code, slicer, reducer, region, size_dict, verbose)
-        for newbranch in branches
-            new_slice = SlicedBranch(newbranch.g, newbranch.code, branch.r + newbranch.r)
+        brs = optimal_branches(branch.g, branch.code, slicer, reducer, region, size_dict, verbose)
+        for (new_branch, new_reducer) in brs
+            new_slice = SlicedBranch(new_branch.g, new_branch.code, branch.r + new_branch.r)
             if (complexity(new_slice).sc ≤ slicer.sc_target)
                 push!(finished_slices, new_slice)
             else
-                push!(unfinished_slices, new_slice)
+                push!(unfinished_slices, (new_slice, new_reducer))
             end
         end
     end
 
-    return _slice_bfs!(unfinished_slices, finished_slices, slicer, reducer, size_dict, verbose)
+    return _slice_bfs!(unfinished_slices, finished_slices, slicer, size_dict, verbose)
 end

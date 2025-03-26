@@ -76,17 +76,17 @@ function optimal_branches(g::SimpleGraph{Int}, code::DynamicNestedEinsum{Int}, s
 
     (verbose ≥ 2) && (@info "length of optimal branches: $(length(optimal_branches_ids))")
 
-    branches = Vector{SlicedBranch{Int}}()
+    brs = Vector{Tuple{SlicedBranch{Int}, AbstractReducer}}() # brs for branches and reducers
     for i in optimal_branches_ids
-        branch = generate_branch(g, code, rvs[i], fixed_ones[i], slicer, reducer, size_dict)
+        new_branch, new_reducer = generate_branch(g, code, rvs[i], fixed_ones[i], slicer, reducer, size_dict)
 
-        (verbose ≥ 2) && (@info "branching id = $i, g: $(nv(branch.g)), $(ne(branch.g))")
-        (verbose ≥ 2) && (cc_ik = complexity(branch); @info "rethermalized code complexity: tc = $(cc_ik.tc), sc = $(cc_ik.sc)")
+        (verbose ≥ 2) && (@info "branching id = $i, g: $(nv(new_branch.g)), $(ne(new_branch.g))")
+        (verbose ≥ 2) && (cc_ik = complexity(new_branch); @info "rethermalized code complexity: tc = $(cc_ik.tc), sc = $(cc_ik.sc)")
 
-        push!(branches, branch)
+        push!(brs, (new_branch, new_reducer))
     end
 
-    return branches
+    return brs
 end
 
 function slicer_loss(g::SimpleGraph{Int}, code::DynamicNestedEinsum{Int}, rvs::Vector{Vector{Int}}, brancher::GreedyBrancher, sc_target::Int, size_dict::Dict{Int, Int})
@@ -161,14 +161,14 @@ end
 
 function generate_branch(g::SimpleGraph{Int}, code::DynamicNestedEinsum{Int}, removed_vertices::Vector{Int}, r0::Int, slicer::ContractionTreeSlicer, reducer::AbstractReducer, size_dict::Dict{Int, Int})
     g_i, vmap_i = induced_subgraph(g, setdiff(1:nv(g), removed_vertices))
-    g_ik, r_ik, vmap_ik = kernelize(g_i, reducer, vmap = vmap_i)
+    g_ik, r_ik, vmap_ik, reducer_ik = kernelize(g_i, reducer, vmap = vmap_i)
 
-    nv(g_ik) == 0 && return SlicedBranch(g_ik, nothing, r_ik + r0)
+    nv(g_ik) == 0 && return (SlicedBranch(g_ik, nothing, r_ik + r0), reducer_ik)
 
     sc0 = contraction_complexity(code, size_dict).sc
 
     code_ik = update_code(g_ik, code, vmap_ik)        
     re_code_ik = refine(code_ik, size_dict, slicer.refiner, slicer.sc_target, sc0)
 
-    return SlicedBranch(g_ik, re_code_ik, r_ik + r0)
+    return (SlicedBranch(g_ik, re_code_ik, r_ik + r0), reducer_ik)
 end
