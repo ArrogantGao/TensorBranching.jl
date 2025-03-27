@@ -7,6 +7,12 @@ abstract type AbstractRegionSelector end
     loss::Symbol = :num_uniques # what else methods? may consider more complicated ones
 end
 
+# the sc_score region selector try to find the region with the minimum sc_score
+@kwdef struct ScScoreRS <: AbstractRegionSelector
+    n_max::Int = 20
+    strategy::Symbol = :mincut # :mincut or :neighbors
+end
+
 abstract type AbstractBrancher end
 
 @kwdef struct GreedyBrancher <: AbstractBrancher
