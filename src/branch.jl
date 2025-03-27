@@ -85,9 +85,10 @@ function optimal_branches(g::SimpleGraph{Int}, code::DynamicNestedEinsum{Int}, s
 
     p = MISProblem(g)
     tbl = branching_table(p, slicer.table_solver, region)
-    subsets, rvs, fixed_ones = generate_subsets(g, tbl, region)
+    (verbose ≥ 2) && (@info "table: $(length(tbl.table))")
 
-    (verbose ≥ 2) && (@info "generating candidates, table: $(length(tbl.table)), candidates: $(length(rvs))")
+    subsets, rvs, fixed_ones = generate_subsets(g, tbl, region)
+    (verbose ≥ 2) && (@info "candidates: $(length(rvs))")
 
     losses = slicer_loss(g, code, rvs, slicer.brancher, slicer.sc_target, size_dict)
 
@@ -100,7 +101,7 @@ function optimal_branches(g::SimpleGraph{Int}, code::DynamicNestedEinsum{Int}, s
     for i in optimal_branches_ids
         new_branch, new_reducer = generate_branch(g, code, rvs[i], fixed_ones[i], slicer, reducer, size_dict)
 
-        (verbose ≥ 2) && (@info "branching id = $i, g: $(nv(new_branch.g)), $(ne(new_branch.g))")
+        (verbose ≥ 2) && (@info "branching id = $i, g: $(nv(new_branch.g)), $(ne(new_branch.g)), rv = $(rvs[i])")
         (verbose ≥ 2) && (cc_ik = complexity(new_branch); @info "rethermalized code complexity: tc = $(cc_ik.tc), sc = $(cc_ik.sc)")
 
         push!(brs, (new_branch, new_reducer))

@@ -26,16 +26,23 @@ abstract type AbstractRefiner end
     ntrials::Int = 10
     niters::Int = 200
     max_rounds::Int = 2
+    reoptimize::Bool = true # setting this to true will reoptimize the code after each round of rethermalization if the resulting sc is larger than sc0
 end
 
 function refine(code::DynamicNestedEinsum{LT}, size_dict::Dict{LT, Int}, refiner::TreeSARefiner, sc_target::Int, sc0::Number) where LT
     refined_code = code
     for i in 1:refiner.max_rounds
         refined_code = @suppress rethermalize(refined_code, size_dict, refiner.βs, refiner.ntrials, refiner.niters, sc_target)
-        # (contraction_complexity(refined_code, size_dict).sc < sc0) && return refined_code
     end
     sc = contraction_complexity(refined_code, size_dict).sc
-    (sc > sc0) && (@warn "Refiner did not improve the code, original sc = $sc0, got $sc")
+    if sc > sc0
+        @warn "Refiner did not improve the code, original sc = $sc0, got $sc, reoptimizing = $(refiner.reoptimize)"
+        if refiner.reoptimize
+            refined_code = @suppress true_eincode(optimize_code(refined_code, size_dict, TreeSA(sc_target = sc0)))
+            @info "Reoptimized the code, sc = $(contraction_complexity(refined_code, size_dict).sc)"
+        end
+    end
+    
     return refined_code
 end
 

@@ -19,6 +19,7 @@ export SlicedBranch
 # tree decomposition
 export decompose, max_bag
 export order2eincode, eincode2order
+export mis_complexity
 
 # dynamic ob
 export kernelize, initialize_code, slice, contract_slices

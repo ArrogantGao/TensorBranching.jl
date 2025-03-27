@@ -183,3 +183,7 @@ end
 function true_eincode(code::Union{DynamicNestedEinsum{LT}, SlicedEinsum{LT}}) where LT
     return code isa SlicedEinsum ? code.eins : code
 end
+
+function mis_complexity(code::DynamicNestedEinsum{LT}) where LT
+    return contraction_complexity(code, uniformsize(code, 2))
+end
