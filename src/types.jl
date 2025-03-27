@@ -21,8 +21,8 @@ end
 
 abstract type AbstractRefiner end
 
-@kwdef struct TreeSARefiner <: AbstractRefiner
-    βs::StepRangeLen = 1000.0:1000.0 # range of βs for the rethermalization
+@kwdef struct TreeSARefiner{IT} <: AbstractRefiner
+    βs::IT = 1000.0:1000.0 # range of βs for the rethermalization
     ntrials::Int = 10
     niters::Int = 200
     max_rounds::Int = 2
