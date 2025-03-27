@@ -11,9 +11,7 @@ end
 @kwdef struct ScScoreRS <: AbstractRegionSelector
     n_max::Int = 20
     strategy::Symbol = :mincut # :mincut or :neighbors
-    loss::Symbol = :num_uniques # what else methods? may consider more complicated ones
 end
-
 
 abstract type AbstractBrancher end
 

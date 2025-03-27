@@ -29,11 +29,10 @@ end
 
 function ob_region(g::SimpleGraph{Int}, code::DynamicNestedEinsum{Int}, slicer::ContractionTreeSlicer, selector::ScScoreRS, size_dict::Dict{Int, Int}, verbose::Int)
 
-    region_i = OptimalBranchingMIS.select_region(g, 1, selector.n_max, selector.strategy)
-    best_loss = sc_score(slicer.sc_target, code, [region_i], size_dict)[1]
-    best_region = region_i
+    local best_region, best_loss
+    best_loss = Inf
 
-    for i in 2:nv(g)
+    for i in 1:nv(g)
         region_i = OptimalBranchingMIS.select_region(g, i, selector.n_max, selector.strategy)
         loss = sc_score(slicer.sc_target, code, [region_i], size_dict)[1]
 
