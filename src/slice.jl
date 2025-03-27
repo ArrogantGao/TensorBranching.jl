@@ -1,5 +1,10 @@
 # generate slices from the kernelized graph
 
+function slice(g::SimpleGraph, code::DynamicNestedEinsum, r::Int, slicer::AbstractSlicer, reducer::AbstractReducer; verbose::Int = 0)
+    branch = SlicedBranch(g, code, r)
+    return slice(branch, slicer, reducer; verbose = verbose)
+end
+
 function slice(branch::SlicedBranch, slicer::AbstractSlicer, reducer::AbstractReducer; verbose::Int = 0)
     size_dict = uniformsize(branch.code, 2)
 

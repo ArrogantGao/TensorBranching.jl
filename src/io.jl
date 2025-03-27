@@ -1,4 +1,4 @@
-function saveslices(slices::Vector{SlicedBranch{TS}}, filename::String) where {TS}
+function saveslices(filename::String, slices::Vector{SlicedBranch{TS}}) where {TS}
     @save filename slices
     return nothing
 end
