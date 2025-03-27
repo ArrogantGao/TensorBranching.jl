@@ -26,6 +26,26 @@ function ob_region(g::SimpleGraph{Int}, code::DynamicNestedEinsum{Int}, slicer::
     return best_region, best_loss
 end
 
+
+function ob_region_scscore(g::SimpleGraph{Int}, code::DynamicNestedEinsum{Int}, slicer::ContractionTreeSlicer, selector::MaxIntersectRS, size_dict::Dict{Int, Int}, verbose::Int)
+
+    region_i = OptimalBranchingMIS.select_region(g, 1, selector.n_max, selector.strategy)
+    best_loss = sc_score(slicer.sc_target, code, [region_i], size_dict)[1]
+    best_region = region_i
+    
+    for i in 2:nv(g)
+        region_i = OptimalBranchingMIS.select_region(g, i, selector.n_max, selector.strategy)
+        loss = sc_score(slicer.sc_target, code, [region_i], size_dict)[1]
+
+        (loss < best_loss) && (best_loss = loss; best_region = region_i)
+    end
+
+    (verbose ≥ 2) && (@info "best region: $best_region \n loss: $best_loss")
+
+    return best_region, best_loss
+end
+
+
 # I notice that in some special cases, different candidates can have the same removed vertices
 # in this case, I merge the covered items of these candidates and take the maximum fixed ones
 function generate_subsets(g::SimpleGraph{Int}, tbl::BranchingTable, region::Vector{Int})
