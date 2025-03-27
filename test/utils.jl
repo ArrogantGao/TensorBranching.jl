@@ -5,8 +5,8 @@ using OptimalBranching
 using OptimalBranching.OptimalBranchingCore, OptimalBranching.OptimalBranchingMIS
 using OptimalBranching.OptimalBranchingMIS.EliminateGraphs
 
-using OptimalBranching.OptimalBranchingMIS.GenericTensorNetworks
-using OptimalBranching.OptimalBranchingMIS.GenericTensorNetworks: generate_tensors
+using GenericTensorNetworks
+using GenericTensorNetworks: generate_tensors
 
 using Test
 using Random
@@ -60,4 +60,12 @@ end
         
         @test rt_order(tensors...)[].n ≈ sub_order(tensors...)[].n ≈ ri_order(tensors...)[].n ≈ rt_ri_order(tensors...)[].n ≈ mis2(EliminateGraph(subg))
     end
+end
+
+@testset "auto slicing" begin
+    g = random_ksg(30, 30, 0.8, 1234)
+    code = initialize_code(g, TreeSA())
+    sc_target = Int(mis_complexity(code).sc) - 2
+    scode = auto_slicing(code, sc_target)
+    @test mis_complexity(scode).sc == sc_target
 end

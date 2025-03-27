@@ -54,7 +54,7 @@ function _slice_bfs!(unfinished_slices::Vector{Tuple{SlicedBranch{Int}, Abstract
 
     if verbose ≥ 1
         scs = [contraction_complexity(branch.code, size_dict).sc for (branch, reducer) in unfinished_slices]
-        @info "current num of unfinished slices: $(length(unfinished_slices)), scs: $scs"
+        @info "current num of unfinished slices: $(length(unfinished_slices)), scs: $(sort!(scs))"
         @info "current num of finished slices: $(length(finished_slices))"
     end
 

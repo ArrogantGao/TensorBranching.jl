@@ -184,6 +184,27 @@ function true_eincode(code::Union{DynamicNestedEinsum{LT}, SlicedEinsum{LT}}) wh
     return code isa SlicedEinsum ? code.eins : code
 end
 
-function mis_complexity(code::DynamicNestedEinsum{LT}) where LT
+function mis_complexity(code)
     return contraction_complexity(code, uniformsize(code, 2))
+end
+
+function auto_slicing(code, sc_target::Int)
+    sc_init = Int(mis_complexity(code).sc)
+    nslices = sc_init - sc_target
+    
+    local new_code
+    while true
+        new_code = optimize_code(code, uniformsize(code, 2), TreeSA(sc_target = sc_target, nslices = nslices))
+        cc = mis_complexity(new_code)
+        cc.sc <= sc_target && break
+        nslices += Int(cc.sc - sc_target)
+    end
+
+    return new_code
+end
+
+function random_ksg(m::Int, n::Int, rho::Float64, seed::Int)
+    Random.seed!(seed)
+    ksg = SimpleGraph(GenericTensorNetworks.random_diagonal_coupled_graph(m, n, rho))
+    return ksg
 end

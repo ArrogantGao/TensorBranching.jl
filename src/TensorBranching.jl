@@ -5,7 +5,7 @@ using OptimalBranching.OptimalBranchingCore, OptimalBranching.OptimalBranchingMI
 
 using GenericTensorNetworks
 using Graphs, TropicalNumbers, OMEinsum, AbstractTrees, TreeWidthSolver
-using Suppressor, JLD2 
+using Suppressor, JLD2, Random
 
 # types
 export AbstractRegionSelector, MaxIntersectRS
@@ -19,7 +19,9 @@ export SlicedBranch
 # tree decomposition
 export decompose, max_bag
 export order2eincode, eincode2order
-export mis_complexity
+
+# omeinsum interface
+export mis_complexity, auto_slicing, random_ksg
 
 # dynamic ob
 export kernelize, initialize_code, slice, contract_slices
@@ -37,6 +39,7 @@ include("dynamic_ob.jl")
 include("kernelize.jl")
 include("slice.jl")
 include("branch.jl")
+include("refine.jl")
 
 # io functions
 include("io.jl")
