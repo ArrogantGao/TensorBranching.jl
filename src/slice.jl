@@ -59,7 +59,9 @@ function _slice_bfs!(unfinished_slices::Vector{Tuple{SlicedBranch{Int}, Abstract
     end
 
     n = length(unfinished_slices)
-    for i in 1:n
+
+    pb = (verbose ≥ 1) ? ProgressBar(1:n) : 1:n
+    for _ in pb
         branch, reducer = popfirst!(unfinished_slices)
         region, loss = ob_region(branch.g, branch.code, slicer, slicer.region_selector, size_dict, verbose)
         brs = optimal_branches(branch.g, branch.code, slicer, reducer, region, size_dict, verbose)
