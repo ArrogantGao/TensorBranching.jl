@@ -1,42 +1,33 @@
 using OptimalBranching.OptimalBranchingCore: candidate_clauses, covered_items
 using OptimalBranching.OptimalBranchingMIS: removed_vertices
 
-function ob_region(g::SimpleGraph{Int}, code::DynamicNestedEinsum{Int}, slicer::ContractionTreeSlicer, selector::MaxIntersectRS, size_dict::Dict{Int, Int}, verbose::Int)
+function ob_region(g::SimpleGraph{Int}, code::DynamicNestedEinsum{Int}, slicer::ContractionTreeSlicer, selector::ScoreRS, size_dict::Dict{Int, Int}, verbose::Int)
 
     large_tensors = list_subtree(code, size_dict, slicer.sc_target)
     large_tensors_iys = [t.eins.iy for t in large_tensors]
     unique_large_tensors_iys = unique!(vcat(large_tensors_iys...))
 
-    best_region = Vector{Int}()
-    best_loss = 0
-
-    for i in unique_large_tensors_iys
-        region_i = OptimalBranchingMIS.select_region(g, i, selector.n_max, selector.strategy)
-        if selector.loss == :num_uniques
-            loss = length(intersect(region_i, unique_large_tensors_iys))
-        else
-            error("Loss function $(selector.loss) not implemented")
-        end
-
-        (loss > best_loss) && (best_loss = loss; best_region = region_i)
+    regions = [Vector{Int}() for _ in unique_large_tensors_iys]
+    Threads.@threads for i in 1:length(unique_large_tensors_iys)
+        iy = unique_large_tensors_iys[i]
+        region_i = OptimalBranchingMIS.select_region(g, iy, selector.n_max, selector.strategy)
+        regions[i] = region_i
     end
 
-    (verbose ≥ 2) && (@info "best region: $best_region \n loss: $best_loss")
-
-    return best_region, best_loss
-end
-
-
-function ob_region(g::SimpleGraph{Int}, code::DynamicNestedEinsum{Int}, slicer::ContractionTreeSlicer, selector::ScScoreRS, size_dict::Dict{Int, Int}, verbose::Int)
-
-    local best_region, best_loss
-    best_loss = Inf
-
-    for i in 1:nv(g)
-        region_i = OptimalBranchingMIS.select_region(g, i, selector.n_max, selector.strategy)
-        loss = sc_score(slicer.sc_target, code, [region_i], size_dict)[1]
-
-        (loss < best_loss) && (best_loss = loss; best_region = region_i)
+    if selector.loss == :sc_score
+        losses = sc_score(slicer.sc_target, code, regions, size_dict)
+        best_loss = minimum(losses)
+        best_region = regions[argmin(losses)]
+    elseif selector.loss == :num_uniques
+        losses = zeros(Float64, length(unique_large_tensors_iys))
+        Threads.@threads for i in 1:length(unique_large_tensors_iys)
+            iy = unique_large_tensors_iys[i]
+            losses[i] = length(intersect(regions[i], iy))
+        end
+        best_loss = maximum(losses)
+        best_region = regions[argmax(losses)]
+    else
+        error("Loss function $(selector.loss) not implemented")
     end
 
     (verbose ≥ 2) && (@info "best region: $best_region \n loss: $best_loss")
@@ -132,7 +123,8 @@ function sc_score(sc_target::Int, code::DynamicNestedEinsum{Int}, rvs::Vector{Ve
     large_tensors = list_subtree(code, size_dict, sc_target)
     large_tensors_iys = [Set(t.eins.iy) for t in large_tensors]
 
-    for (i, rv) in enumerate(rvs)
+    Threads.@threads for i in 1:length(rvs)
+        rv = rvs[i]
         for lt_iy in large_tensors_iys
             t = max(0, length(lt_iy) - reduce((y, x) -> y += (x ∈ lt_iy), rv, init = 0) - sc_target)
             scores[i] += 2.0^t - 1.0
@@ -142,14 +134,21 @@ function sc_score(sc_target::Int, code::DynamicNestedEinsum{Int}, rvs::Vector{Ve
     return scores
 end
 
+# tree bag score 
+function tb_score(sc_target::Int, code::DynamicNestedEinsum{Int}, rvs::Vector{Vector{Int}}, size_dict::Dict{Int, Int})
+    tree = decompose(code)
+    # find all the tree bags that are larger than sc_target
+end
+
 # sc_measure is similar to the D3 measure, where each tensor is counted by (t - sc_target)
 function sc_measure(sc_target::Int, code::DynamicNestedEinsum{Int}, rvs::Vector{Vector{Int}}, size_dict::Dict{Int, Int})
-    delta_rho = ones(Float64, length(rvs))
+    delta_rho = zeros(Float64, length(rvs))
 
     large_tensors = list_subtree(code, size_dict, sc_target)
     large_tensors_iys = [Set(t.eins.iy) for t in large_tensors]
 
-    for (i, rv) in enumerate(rvs)
+    Threads.@threads for i in 1:length(rvs)
+        rv = rvs[i]
         for lt_iy in large_tensors_iys
             delta_rho[i] += reduce((y, x) -> y += (x ∈ lt_iy), rv, init = 0)
         end

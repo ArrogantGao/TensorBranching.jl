@@ -11,7 +11,7 @@ Random.seed!(1234)
     for reducer in [MISReducer(), XiaoReducer(), TensorNetworkReducer()]
         for brancher in [GreedyBrancher(), FixedPointBrancher()]
             for refiner in [TreeSARefiner()]
-                for selector in [MaxIntersectRS(), ScScoreRS()]
+                for selector in [ScoreRS(loss = :num_uniques), ScoreRS(loss = :sc_score)]
                     for search_order in [:bfs, :dfs]
                         slicer = ContractionTreeSlicer(sc_target = 10, brancher = brancher, refiner = refiner, search_order = search_order, region_selector = selector)
                         @info "reducer = $reducer, brancher = $brancher, refiner = $refiner, search_order = $search_order, region_selector = $selector"

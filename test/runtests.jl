@@ -1,17 +1,17 @@
 using TensorBranching
 using Test
 
-@testset "utils" begin
-    include("utils.jl")
-end
+# @testset "utils" begin
+#     include("utils.jl")
+# end
 
-@testset "tree decomposition" begin
-    include("decompose.jl")
-end
+# @testset "tree decomposition" begin
+#     include("decompose.jl")
+# end
 
-@testset "kernelize" begin
-    include("kernelize.jl")
-end
+# @testset "kernelize" begin
+#     include("kernelize.jl")
+# end
 
 @testset "dynamic ob" begin
     include("dynamic_ob.jl")

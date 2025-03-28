@@ -8,7 +8,7 @@ using Graphs, TropicalNumbers, OMEinsum, AbstractTrees, TreeWidthSolver
 using Suppressor, JLD2, Random, ProgressBars
 
 # types
-export AbstractRegionSelector, MaxIntersectRS, ScScoreRS
+export AbstractRegionSelector, ScoreRS
 export AbstractSlicer, ContractionTreeSlicer
 export AbstractRefiner, TreeSARefiner, ReoptimizeRefiner
 export AbstractBrancher, GreedyBrancher, FixedPointBrancher

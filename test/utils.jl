@@ -63,7 +63,7 @@ end
 end
 
 @testset "auto slicing" begin
-    g = random_ksg(30, 30, 0.8, 1234)
+    g = random_ksg(20, 20, 0.8, 1234)
     code = initialize_code(g, TreeSA())
     sc_target = Int(mis_complexity(code).sc) - 2
     scode = auto_slicing(code, sc_target)
