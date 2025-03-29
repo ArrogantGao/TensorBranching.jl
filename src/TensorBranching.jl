@@ -5,7 +5,7 @@ using OptimalBranching.OptimalBranchingCore, OptimalBranching.OptimalBranchingMI
 
 using GenericTensorNetworks
 using Graphs, TropicalNumbers, OMEinsum, AbstractTrees, TreeWidthSolver
-using Suppressor, JLD2, Random, ProgressBars
+using Suppressor, JLD2, Random, ProgressBars, UnicodePlots
 
 # types
 export AbstractRegionSelector, ScoreRS

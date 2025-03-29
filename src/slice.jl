@@ -53,9 +53,14 @@ function _slice_bfs!(unfinished_slices::Vector{Tuple{SlicedBranch{Int}, Abstract
     isempty(unfinished_slices) && return finished_slices
 
     if verbose ≥ 1
-        scs = [contraction_complexity(branch.code, size_dict).sc for (branch, reducer) in unfinished_slices]
-        @info "current num of unfinished slices: $(length(unfinished_slices)), scs: $(sort!(scs))"
+        scs = Int.([contraction_complexity(branch.code, size_dict).sc for (branch, reducer) in unfinished_slices])
+        @info "current num of unfinished slices: $(length(unfinished_slices)), largest sc: $(maximum(scs)), smallest sc: $(minimum(scs))"
         @info "current num of finished slices: $(length(finished_slices))"
+        counts = zeros(Int, maximum(scs) - minimum(scs) + 1)
+        for sc in scs
+            counts[sc - minimum(scs) + 1] += 1
+        end
+        println(barplot(minimum(scs):maximum(scs), counts, xlabel = "num of slices", ylabel = "sc"))
     end
 
     n = length(unfinished_slices)

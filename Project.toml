@@ -16,6 +16,7 @@ Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 Suppressor = "fd094767-a336-5f1f-9728-57cf17d0bbfb"
 TreeWidthSolver = "7d267fc5-9ace-409f-a54c-cd2374872a55"
 TropicalNumbers = "b3a74e9c-7526-4576-a4eb-79c0d4c32334"
+UnicodePlots = "b8865327-cd53-5732-bb35-84acbb429228"
 
 [compat]
 AbstractTrees = "0.4.5"
@@ -30,6 +31,7 @@ Random = "1.11.0"
 Suppressor = "0.2.8"
 TreeWidthSolver = "0.3.4"
 TropicalNumbers = "0.6.3"
+UnicodePlots = "3.7.2"
 julia = "1.11"
 
 [extras]
