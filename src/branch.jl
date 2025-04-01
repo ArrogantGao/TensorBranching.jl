@@ -77,6 +77,14 @@ function optimal_branches(g::SimpleGraph{Int}, code::DynamicNestedEinsum{Int}, s
     tbl = branching_table(p, slicer.table_solver, region)
     (verbose ≥ 2) && (@info "table: $(length(tbl.table))")
 
+    # special case: find reduction
+    reduction = OptimalBranchingCore.intersect_clauses(tbl, :dfs)
+    if !isempty(reduction)
+        c = reduction[1]
+        new_branch, new_reducer = generate_branch(g, code, sort!(removed_vertices(region, g, c)), count_ones(c.val & c.mask), slicer, reducer, size_dict)
+        return [(new_branch, new_reducer)]
+    end
+
     subsets, rvs, fixed_ones = generate_subsets(g, tbl, region)
     (verbose ≥ 2) && (@info "candidates: $(length(rvs))")
 

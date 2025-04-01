@@ -23,9 +23,9 @@ abstract type AbstractRefiner end
 
 @kwdef struct TreeSARefiner{IT} <: AbstractRefiner
     βs::IT = 1.0:1.0:15.0 # range of βs for the rethermalization
-    ntrials::Int = 10
-    niters::Int = 50
-    max_rounds::Int = 2
+    ntrials::Int = 3
+    niters::Int = 10
+    max_rounds::Int = 4
     reoptimize::Bool = true # setting this to true will reoptimize the code after each round of rethermalization if the resulting sc is larger than sc0
 end
 
@@ -52,7 +52,7 @@ end
 function Base.show(io::IO, branch::SlicedBranch{T}) where T
     print(io, "SlicedBranch{$T}: ")
     print(io, "graph: {$(nv(branch.g)), $(ne(branch.g))} simple graph; ")
-    cc = contraction_complexity(branch.code, uniformsize(branch.code, 2))
+    cc = complexity(branch)
     print(io, "code complexity: sc: $(cc.sc), tc: $(cc.tc)")
     print(io, "; fixed ones: $(branch.r)")
 end

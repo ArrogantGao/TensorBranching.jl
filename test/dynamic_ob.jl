@@ -5,7 +5,7 @@ using OptimalBranching.OptimalBranchingMIS.EliminateGraphs
 using GenericTensorNetworks
 using Test
 using Random
-Random.seed!(1234)
+Random.seed!(123)
 
 @testset "dynamic_ob for mis, treesa refiner" begin
     for reducer in [MISReducer(), XiaoReducer(), TensorNetworkReducer()]

@@ -12,7 +12,7 @@ function slice(branch::SlicedBranch, slicer::AbstractSlicer, reducer::AbstractRe
 
     if slicer.search_order == :dfs
         slices = Vector{SlicedBranch{Int}}()
-        _slice_dfs!(slices, branch, slicer, reducer, size_dict, verbose)
+        @suppress_err _slice_dfs!(slices, branch, slicer, reducer, size_dict, verbose)
     elseif slicer.search_order == :bfs
         unfinished_slices = Vector{Tuple{SlicedBranch{Int}, AbstractReducer}}()
         finished_slices = Vector{SlicedBranch{Int}}()
@@ -54,22 +54,30 @@ function _slice_bfs!(unfinished_slices::Vector{Tuple{SlicedBranch{Int}, Abstract
 
     if verbose ≥ 1
         scs = Int.([contraction_complexity(branch.code, size_dict).sc for (branch, reducer) in unfinished_slices])
-        @info "current num of unfinished slices: $(length(unfinished_slices)), largest sc: $(maximum(scs)), smallest sc: $(minimum(scs))"
-        @info "current num of finished slices: $(length(finished_slices))"
+        @info "current num of unfinished slices: $(length(unfinished_slices)), finished slices: $(length(finished_slices))"
         counts = zeros(Int, maximum(scs) - minimum(scs) + 1)
         for sc in scs
             counts[sc - minimum(scs) + 1] += 1
         end
-        println(barplot(minimum(scs):maximum(scs), counts, xlabel = "num of slices", ylabel = "sc"))
+        println(barplot(minimum(scs):maximum(scs), counts, xlabel = "num of slices", ylabel = "sc, target = $(slicer.sc_target)"))
     end
 
     n = length(unfinished_slices)
+    temp_slices = Vector{Vector{Tuple{SlicedBranch{Int}, AbstractReducer}}}(undef, n)
 
     pb = (verbose ≥ 1) ? ProgressBar(1:n) : 1:n
-    for _ in pb
-        branch, reducer = popfirst!(unfinished_slices)
-        region, loss = ob_region(branch.g, branch.code, slicer, slicer.region_selector, size_dict, verbose)
-        brs = optimal_branches(branch.g, branch.code, slicer, reducer, region, size_dict, verbose)
+    @suppress_err begin
+        Threads.@threads for i in pb
+            branch, reducer = unfinished_slices[i]
+            region, loss = ob_region(branch.g, branch.code, slicer, slicer.region_selector, size_dict, verbose)
+            brs = optimal_branches(branch.g, branch.code, slicer, reducer, region, size_dict, verbose)
+            temp_slices[i] = brs
+        end
+    end
+
+    for i in 1:n
+        branch, reducer = unfinished_slices[i]
+        brs = temp_slices[i]
         for (new_branch, new_reducer) in brs
             new_slice = SlicedBranch(new_branch.g, new_branch.code, branch.r + new_branch.r)
             if (complexity(new_slice).sc ≤ slicer.sc_target)
@@ -79,6 +87,8 @@ function _slice_bfs!(unfinished_slices::Vector{Tuple{SlicedBranch{Int}, Abstract
             end
         end
     end
+
+    deleteat!(unfinished_slices, 1:n)
 
     return _slice_bfs!(unfinished_slices, finished_slices, slicer, size_dict, verbose)
 end
