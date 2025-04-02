@@ -194,7 +194,7 @@ function auto_slicing(code, sc_target::Int)
     
     local new_code
     while true
-        @suppress new_code = optimize_code(code, uniformsize(code, 2), TreeSA(sc_target = sc_target, nslices = nslices))
+        new_code = optimize_code(code, uniformsize(code, 2), TreeSA(sc_target = sc_target, nslices = nslices))
         cc = mis_complexity(new_code)
         cc.sc <= sc_target && break
         nslices += max(1, Int(cc.sc - sc_target))

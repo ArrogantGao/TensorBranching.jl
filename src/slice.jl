@@ -12,7 +12,7 @@ function slice(branch::SlicedBranch, slicer::AbstractSlicer, reducer::AbstractRe
 
     if slicer.search_order == :dfs
         slices = Vector{SlicedBranch{Int}}()
-        @suppress_err _slice_dfs!(slices, branch, slicer, reducer, size_dict, verbose)
+        _slice_dfs!(slices, branch, slicer, reducer, size_dict, verbose)
     elseif slicer.search_order == :bfs
         unfinished_slices = Vector{Tuple{SlicedBranch{Int}, AbstractReducer}}()
         finished_slices = Vector{SlicedBranch{Int}}()
@@ -64,16 +64,20 @@ function _slice_bfs!(unfinished_slices::Vector{Tuple{SlicedBranch{Int}, Abstract
 
     n = length(unfinished_slices)
     temp_slices = Vector{Vector{Tuple{SlicedBranch{Int}, AbstractReducer}}}(undef, n)
+    nt = Threads.nthreads()
+    chunks = collect(Iterators.partition(1:n, ceil(Int, n/nt)))
 
-    pb = (verbose ≥ 1) ? ProgressBar(1:n) : 1:n
-    @suppress_err begin
-        Threads.@threads for i in pb
+    time_start = time()
+    Threads.@threads for chunk in chunks
+        for i in chunk
             branch, reducer = unfinished_slices[i]
             region, loss = ob_region(branch.g, branch.code, slicer, slicer.region_selector, size_dict, verbose)
             brs = optimal_branches(branch.g, branch.code, slicer, reducer, region, size_dict, verbose)
             temp_slices[i] = brs
         end
     end
+    time_end = time()
+    (verbose ≥ 1) && @info "time: $(time_end - time_start), average time: $((time_end - time_start) / n)"
 
     for i in 1:n
         branch, reducer = unfinished_slices[i]

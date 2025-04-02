@@ -24,8 +24,8 @@ abstract type AbstractRefiner end
 @kwdef struct TreeSARefiner{IT} <: AbstractRefiner
     βs::IT = 1.0:1.0:15.0 # range of βs for the rethermalization
     ntrials::Int = 3
-    niters::Int = 10
-    max_rounds::Int = 4
+    niters::Int = 30
+    max_rounds::Int = 2
     reoptimize::Bool = true # setting this to true will reoptimize the code after each round of rethermalization if the resulting sc is larger than sc0
 end
 
