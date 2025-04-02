@@ -14,11 +14,12 @@ export AbstractRefiner, TreeSARefiner, ReoptimizeRefiner
 export AbstractBrancher, GreedyBrancher, FixedPointBrancher
 export AbstractReducer, MISReducer, XiaoReducer, TensorNetworkReducer
 
-export SlicedBranch
+export SlicedBranch, CompressedEinsum
 
 # tree decomposition
 export decompose, max_bag
 export order2eincode, eincode2order
+export compress, uncompress
 
 # omeinsum interface
 export mis_complexity, auto_slicing, random_ksg

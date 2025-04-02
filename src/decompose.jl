@@ -1,7 +1,3 @@
-using OMEinsum: getixsv, getiyv, LeafString, flatten, _flatten, isleaf, decorate
-using OMEinsum.OMEinsumContractionOrders: IncidenceList, parse_eincode, eo2ct, ContractionTree
-using TensorBranching.GenericTensorNetworks: rawcode
-
 # transform optimized eincode to elimination order
 function eincode2order(code::NestedEinsum{L}) where {L}
     elimination_order = Vector{L}()
@@ -101,4 +97,13 @@ function update_code(g_new::SimpleGraph{Int}, code_old::NestedEinsum, vmap::Vect
     eo_old = eincode2order(code_old)
     eo_new = update_order(eo_old, vmap)
     return order2eincode(g_new, eo_new)
+end
+
+function ein2contraction_tree(code::NestedEinsum)
+    @assert is_binary(code)
+    return _ein2contraction_tree(code)
+end
+
+function _ein2contraction_tree(code)
+    return isleaf(code) ? code.tensorindex : ContractionTree(_ein2contraction_tree(code.args[1]), _ein2contraction_tree(code.args[2]))
 end

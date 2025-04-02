@@ -83,3 +83,19 @@ end
     @test !is_connected(g_new)
     @test solve(GenericTensorNetwork(IndependentSet(g_new)), SizeMax()) ≈ solve(GenericTensorNetwork(IndependentSet(g_new), code_new, Dict{Int, Int}()), SizeMax())
 end
+
+@testset "compressing and uncompressing code" begin
+    for n in 30:10:100
+        g = random_regular_graph(n, 3)
+        code = GenericTensorNetwork(IndependentSet(g)).code
+        compressed_code = compress(code)
+        uncompressed_code = uncompress(compressed_code)
+
+        cc = mis_complexity(code)
+        ccc = mis_complexity(uncompressed_code)
+
+        @test cc.sc ≈ ccc.sc
+        @test cc.tc ≈ ccc.tc
+        @test cc.rwc ≈ ccc.rwc
+    end
+end

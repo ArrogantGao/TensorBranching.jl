@@ -1,3 +1,7 @@
+using OMEinsum: getixsv, getiyv, LeafString, flatten, _flatten, isleaf, decorate
+using OMEinsum.OMEinsumContractionOrders: IncidenceList, parse_eincode, eo2ct, ContractionTree
+using TensorBranching.GenericTensorNetworks: rawcode
+
 abstract type AbstractRegionSelector end
 
 # the maximum intersection region selector try to find the region with the maximum intersection with the largest tensors, where large means larger that the threshold
@@ -64,3 +68,29 @@ function complexity(branch::SlicedBranch)
 end
 tc(branch::SlicedBranch) = complexity(branch).tc
 sc(branch::SlicedBranch) = complexity(branch).sc
+
+struct CompressedEinsum{LT}
+    ixs::Vector{Vector{Int}}
+    iy::Vector{Int}
+    ct::ContractionTree
+    function CompressedEinsum(ixs::Vector{Vector{Int}}, iy::Vector{Int}, ct::ContractionTree)
+        return new{typeof(ixs)}(ixs, iy, ct)
+    end
+end
+
+AbstractTrees.nodevalue(ct::ContractionTree) = "-"
+AbstractTrees.children(ct::ContractionTree) = [ct.left, ct.right]
+Base.show(io::IO, ct::ContractionTree) = print_tree(io, ct)
+
+function compress(code::NestedEinsum)
+    ixs = getixsv(code)
+    iy = getiyv(code)
+    ct = ein2contraction_tree(code)
+    return CompressedEinsum(ixs, iy, ct)
+end
+
+function uncompress(ce::CompressedEinsum{LT}) where LT
+    incidence_list = IncidenceList(Dict([i=>ix for (i, ix) in enumerate(ce.ixs)]))
+    code = parse_eincode(incidence_list, ce.ct, vertices = collect(1:length(ce.ixs)))
+    return decorate(code)
+end
