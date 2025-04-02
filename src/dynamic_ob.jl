@@ -39,7 +39,7 @@ function contract_slices(branches::Vector{SlicedBranch{T1}}, element_type::Type,
         if nv(branch.g) == 0
             push!(res, branch.r)
         else
-            net = GenericTensorNetwork(IndependentSet(branch.g), branch.code, Dict{Int, Int}())
+            net = GenericTensorNetwork(IndependentSet(branch.g), uncompress(branch.code), Dict{Int, Int}())
             t = Array(solve(net, SizeMax(), T = element_type, usecuda = usecuda))[].n
             res_i = Int(t) + branch.r
             push!(res, res_i)

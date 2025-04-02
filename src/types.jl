@@ -48,33 +48,12 @@ abstract type AbstractSlicer end
     refiner::AbstractRefiner = TreeSARefiner()
 end
 
-struct SlicedBranch{T}
-    g::SimpleGraph{T}
-    code::Union{DynamicNestedEinsum{T}, Nothing}
-    r::Int
-end
-function Base.show(io::IO, branch::SlicedBranch{T}) where T
-    print(io, "SlicedBranch{$T}: ")
-    print(io, "graph: {$(nv(branch.g)), $(ne(branch.g))} simple graph; ")
-    cc = complexity(branch)
-    print(io, "code complexity: sc: $(cc.sc), tc: $(cc.tc)")
-    print(io, "; fixed ones: $(branch.r)")
-end
-
-function complexity(branch::SlicedBranch)
-    code = branch.code
-    isnothing(code) && return OMEinsum.OMEinsumContractionOrders.ContractionComplexity(0.0, 0.0, 0.0)
-    return contraction_complexity(code, uniformsize(code, 2))
-end
-tc(branch::SlicedBranch) = complexity(branch).tc
-sc(branch::SlicedBranch) = complexity(branch).sc
-
 struct CompressedEinsum{LT}
-    ixs::Vector{Vector{Int}}
-    iy::Vector{Int}
+    ixs::Vector{Vector{LT}}
+    iy::Vector{LT}
     ct::ContractionTree
-    function CompressedEinsum(ixs::Vector{Vector{Int}}, iy::Vector{Int}, ct::ContractionTree)
-        return new{typeof(ixs)}(ixs, iy, ct)
+    function CompressedEinsum(ixs::Vector{Vector{LT}}, iy::Vector{LT}, ct::ContractionTree) where LT
+        return new{LT}(ixs, iy, ct)
     end
 end
 
@@ -94,3 +73,35 @@ function uncompress(ce::CompressedEinsum{LT}) where LT
     code = parse_eincode(incidence_list, ce.ct, vertices = collect(1:length(ce.ixs)))
     return decorate(code)
 end
+
+struct SlicedBranch{T}
+    g::SimpleGraph{T}
+    code::Union{CompressedEinsum{T}, Nothing}
+    r::Int
+    function SlicedBranch(g::SimpleGraph{T}, ::Nothing, r::Int) where T
+        return new{T}(g, nothing, r)
+    end
+    function SlicedBranch(g::SimpleGraph{T}, code::CompressedEinsum{T}, r::Int) where T
+        return new{T}(g, code, r)
+    end
+    function SlicedBranch(g::SimpleGraph{T}, code::DynamicNestedEinsum{T}, r::Int) where T
+        return new{T}(g, compress(code), r)
+    end
+end
+function Base.show(io::IO, branch::SlicedBranch{T}) where T
+    print(io, "SlicedBranch{$T}: ")
+    print(io, "graph: {$(nv(branch.g)), $(ne(branch.g))} simple graph; ")
+    cc = complexity(branch)
+    print(io, "code complexity: sc: $(cc.sc), tc: $(cc.tc)")
+    print(io, "; fixed ones: $(branch.r)")
+end
+
+add_r(branch::SlicedBranch{T}, r::Int) where T = SlicedBranch(branch.g, branch.code, branch.r + r)
+
+function complexity(branch::SlicedBranch)
+    isnothing(branch.code) && return OMEinsum.OMEinsumContractionOrders.ContractionComplexity(0.0, 0.0, 0.0)
+    code = uncompress(branch.code)
+    return contraction_complexity(code, uniformsize(code, 2))
+end
+tc(branch::SlicedBranch) = complexity(branch).tc
+sc(branch::SlicedBranch) = complexity(branch).sc

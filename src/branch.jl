@@ -68,7 +68,7 @@ function generate_subsets(g::SimpleGraph{Int}, tbl::BranchingTable, region::Vect
     return subsets, rvs, fixed_ones
 end
 
-function optimal_branches(g::SimpleGraph{Int}, code::DynamicNestedEinsum{Int}, slicer::ContractionTreeSlicer, reducer::AbstractReducer, region::Vector{Int}, size_dict::Dict{Int, Int}, verbose::Int)
+function optimal_branches(g::SimpleGraph{Int}, code::DynamicNestedEinsum{Int}, r::Int, slicer::ContractionTreeSlicer, reducer::AbstractReducer, region::Vector{Int}, size_dict::Dict{Int, Int}, verbose::Int)
 
     cc = contraction_complexity(code, size_dict)
     (verbose ≥ 2) && (@info "solving g: $(nv(g)), $(ne(g)), code complexity: tc = $(cc.tc), sc = $(cc.sc)")
@@ -82,7 +82,7 @@ function optimal_branches(g::SimpleGraph{Int}, code::DynamicNestedEinsum{Int}, s
     if !isempty(reduction)
         c = reduction[1]
         new_branch, new_reducer = generate_branch(g, code, sort!(removed_vertices(region, g, c)), count_ones(c.val & c.mask), slicer, reducer, size_dict)
-        return [(new_branch, new_reducer)]
+        return [(add_r(new_branch, r), new_reducer)]
     end
 
     subsets, rvs, fixed_ones = generate_subsets(g, tbl, region)
@@ -102,7 +102,7 @@ function optimal_branches(g::SimpleGraph{Int}, code::DynamicNestedEinsum{Int}, s
         (verbose ≥ 2) && (@info "branching id = $i, g: $(nv(new_branch.g)), $(ne(new_branch.g)), rv = $(rvs[i])")
         (verbose ≥ 2) && (cc_ik = complexity(new_branch); @info "rethermalized code complexity: tc = $(cc_ik.tc), sc = $(cc_ik.sc)")
 
-        push!(brs, (new_branch, new_reducer))
+        push!(brs, (add_r(new_branch, r), new_reducer))
     end
 
     return brs
