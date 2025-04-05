@@ -5,7 +5,8 @@ using OptimalBranching.OptimalBranchingCore, OptimalBranching.OptimalBranchingMI
 
 using GenericTensorNetworks
 using Graphs, TropicalNumbers, OMEinsum, AbstractTrees, TreeWidthSolver
-using JLD2, Random, UnicodePlots
+using JLD2, Random, UnicodePlots, CSV, DataFrames
+using Base.Threads
 
 # types
 export AbstractRegionSelector, ScoreRS

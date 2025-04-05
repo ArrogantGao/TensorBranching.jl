@@ -1,5 +1,6 @@
 using TensorBranching
 using Graphs, OMEinsum, OptimalBranching.OptimalBranchingMIS, TropicalNumbers
+using CSV, DataFrames
 using Test
 
 @testset "io" begin
@@ -17,4 +18,8 @@ using Test
     slices_loaded = loadslices(filename)
     @test length(slices_loaded) == length(slices)
     @test contract_slices(slices_loaded, TropicalF32, false) == contract_slices(slices, TropicalF32, false)
+
+    @test isnothing(slice(g, code, r, ContractionTreeSlicer(sc_target = 3), XiaoReducer(); dirname = temp_dir))
+    df = CSV.read(joinpath(temp_dir, "slices.csv"), DataFrame)
+    @test df isa DataFrame
 end
