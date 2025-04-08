@@ -208,3 +208,36 @@ function random_ksg(m::Int, n::Int, rho::Float64, seed::Int)
     ksg = SimpleGraph(GenericTensorNetworks.random_diagonal_coupled_graph(m, n, rho))
     return ksg
 end
+
+function contraction_peak_memory(code::NestedEinsum, size_dict)
+    ixs = getixsv(code)
+    tscs = Float64[]
+    initial_sc = sum(prod(Float64(size_dict[i]) for i in ix) for ix in ixs)
+    push!(tscs, initial_sc)
+    _tsc!(tscs, code, size_dict, ixs)
+    return maximum(log2.(tscs))
+end
+
+function _tsc!(tscs, code, size_dict, ixs)
+    isleaf(code) && return nothing
+
+    for subcode in code.args
+        _tsc!(tscs, subcode, size_dict, ixs)
+    end
+
+    freed_size = isempty(code.eins.ixs) ? 0.0 : sum(isempty(ix) ? 1.0 : prod(Float64(size_dict[i]) for i in ix) for ix in code.eins.ixs)
+    allocated_size = isempty(code.eins.iy) ? 1.0 : prod(Float64(size_dict[i]) for i in code.eins.iy)
+    new_size = tscs[end] - freed_size + allocated_size
+    push!(tscs, new_size)
+    return nothing
+end
+
+function contraction_all_memory(code::NestedEinsum, size_dict)
+    return log2(_ssc!(code, size_dict))
+end
+
+function _ssc!(code, size_dict)
+    isleaf(code) && return zero(Float64)
+    t = isempty(code.eins.iy) ? 1.0 : prod(Float64(size_dict[i]) for i in code.eins.iy)
+    return t + sum(_ssc!(subcode, size_dict) for subcode in code.args)
+end

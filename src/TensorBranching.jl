@@ -23,7 +23,7 @@ export order2eincode, eincode2order
 export compress, uncompress
 
 # omeinsum interface
-export mis_complexity, auto_slicing, random_ksg
+export mis_complexity, auto_slicing, random_ksg, contraction_peak_memory, contraction_all_memory
 
 # dynamic ob
 export kernelize, initialize_code, slice, contract_slices
