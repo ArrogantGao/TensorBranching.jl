@@ -219,17 +219,18 @@ function contraction_peak_memory(code::NestedEinsum, size_dict)
 end
 
 function _tsc!(tscs, code, size_dict, ixs)
-    isleaf(code) && return nothing
+    isleaf(code) && return zero(Float64)
 
+    freed_size = zero(Float64)
     for subcode in code.args
-        _tsc!(tscs, subcode, size_dict, ixs)
+        freed_size += _tsc!(tscs, subcode, size_dict, ixs)
     end
 
-    freed_size = isempty(code.eins.ixs) ? 0.0 : sum(isempty(ix) ? 1.0 : prod(Float64(size_dict[i]) for i in ix) for ix in code.eins.ixs)
+    future_freed_size = isempty(code.eins.ixs) ? 0.0 : sum(isempty(ix) ? 1.0 : prod(Float64(size_dict[i]) for i in ix) for ix in code.eins.ixs)
     allocated_size = isempty(code.eins.iy) ? 1.0 : prod(Float64(size_dict[i]) for i in code.eins.iy)
-    new_size = tscs[end] - freed_size + allocated_size
+    new_size = tscs[end] + allocated_size - freed_size
     push!(tscs, new_size)
-    return nothing
+    return future_freed_size
 end
 
 function contraction_all_memory(code::NestedEinsum, size_dict)
