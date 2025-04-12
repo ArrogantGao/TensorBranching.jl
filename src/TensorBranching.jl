@@ -26,7 +26,8 @@ export compress, uncompress
 export mis_complexity, auto_slicing, random_ksg, contraction_peak_memory, contraction_all_memory
 
 # dynamic ob
-export kernelize, initialize_code, slice, contract_slices
+export kernelize, initialize_code, contract_slices
+export slice, slice_tree
 export dynamic_ob_mis
 
 #io

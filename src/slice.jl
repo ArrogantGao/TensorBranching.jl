@@ -156,3 +156,27 @@ function __slice_bfs(unfinished_slices::Vector{ST}, slicer::AbstractSlicer, size
 
     return brss, scs, tcs
 end
+
+function slice_tree(g::SimpleGraph, code::DynamicNestedEinsum, r::Int, slicer::AbstractSlicer, reducer::AbstractReducer; verbose::Int = 0)
+    branch = SlicedBranch(g, code, r)
+    size_dict = uniformsize(code, 2)
+    return _slice_tree(branch, slicer, reducer, size_dict, verbose)
+end
+
+function _slice_tree(branch::SlicedBranch, slicer::AbstractSlicer, reducer::AbstractReducer, size_dict::Dict{Int, Int}, verbose::Int)
+    tree = SlicingTree(branch, SlicingTree[])
+    if nv(branch.g) == 0 || (complexity(branch).sc ≤ slicer.sc_target) || isnothing(branch.code)
+        return tree
+    end
+
+    uncompressed_code = uncompress(branch.code)
+    region, loss = ob_region(branch.g, uncompressed_code, slicer, slicer.region_selector, size_dict, verbose)
+    brs = optimal_branches(branch.g, uncompressed_code, branch.r, slicer, reducer, region, size_dict, verbose)
+
+    for (new_branch, new_reducer) in brs
+        push!(tree.children, _slice_tree(new_branch, slicer, new_reducer, size_dict, verbose))
+    end
+
+    return tree
+end
+

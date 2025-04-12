@@ -13,6 +13,10 @@ end
     include("kernelize.jl")
 end
 
+@testset "slice" begin
+    include("slice.jl")
+end
+
 @testset "dynamic ob" begin
     include("dynamic_ob.jl")
 end

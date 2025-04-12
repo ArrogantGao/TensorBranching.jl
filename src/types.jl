@@ -105,3 +105,12 @@ function complexity(branch::SlicedBranch)
 end
 tc(branch::SlicedBranch) = complexity(branch).tc
 sc(branch::SlicedBranch) = complexity(branch).sc
+
+struct SlicingTree
+    node::SlicedBranch
+    children::Vector{SlicingTree}
+end
+AbstractTrees.nodevalue(tree::SlicingTree) = Int(sc(tree.node))
+AbstractTrees.children(tree::SlicingTree) = tree.children
+Base.show(io::IO, tree::SlicingTree) = print_tree(io, tree)
+isslicingleaf(tree::SlicingTree) = isempty(tree.children)
