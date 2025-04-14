@@ -41,7 +41,7 @@ abstract type AbstractSlicer end
 
 @kwdef struct ContractionTreeSlicer <: AbstractSlicer
     sc_target::Int = 30
-    search_order::Symbol = :bfs # :bfs or :dfs
+    search_order::Symbol = :bfs # :bfs, :dfs, :tree, or :bfs_rw
     region_selector::AbstractRegionSelector = ScoreRS() # select the region to branch, what else methods?
     table_solver::AbstractTableSolver = TensorNetworkSolver()
     brancher::AbstractBrancher = GreedyBrancher()

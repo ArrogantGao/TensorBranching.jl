@@ -22,3 +22,24 @@ function loadslices(filename::String)
     slices = load(filename, "slices")
     return slices
 end
+
+function save_finished(dirname::String, branch::SlicedBranch, id::Int)
+    graph_name = joinpath(dirname, "graph_$(id).dot")
+    code_name = joinpath(dirname, "eincode_$(id).json")
+    savegraph(graph_name, branch.g)
+    writejson(code_name, uncompress(branch.code))
+    return nothing
+end
+
+function save_unfinished(dirname::String, branch::SlicedBranch, reducer::AbstractReducer, id::Int)
+    filename = joinpath(dirname, "unfinished_$(id).jld")
+    @save filename branch reducer
+    return nothing
+end
+
+function load_unfinished(dirname::String, id::Int)
+    filename = joinpath(dirname, "unfinished_$(id).jld")
+    branch = load(filename, "branch")
+    reducer = load(filename, "reducer")
+    return branch, reducer
+end

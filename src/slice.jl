@@ -15,6 +15,12 @@ function slice(branch::SlicedBranch, slicer::AbstractSlicer, reducer::AbstractRe
         _slice_dfs!(slices, branch, slicer, reducer, size_dict, verbose)
     elseif slicer.search_order == :bfs
         slices = _slice_bfs(branch, slicer, reducer, size_dict, verbose, dirname)
+    elseif slicer.search_order == :tree
+        slices = _slice_tree(branch, slicer, reducer, size_dict, verbose)
+    elseif slicer.search_order == :bfs_rw
+        isnothing(dirname) && error("dirname must be provided for bfs_rw")
+        !isdir(dirname) && mkdir(dirname)
+        slices = _slice_bfs_rw(branch, slicer, reducer, size_dict, verbose, dirname)
     else
         error("search_order must be :dfs or :bfs")
     end
@@ -155,6 +161,82 @@ function __slice_bfs(unfinished_slices::Vector{ST}, slicer::AbstractSlicer, size
     end
 
     return brss, scs, tcs
+end
+
+
+function _slice_bfs_rw(branch::SlicedBranch, slicer::AbstractSlicer, reducer::AbstractReducer, size_dict::Dict{Int, Int}, verbose::Int, dirname)
+    df = CSV.write(joinpath(dirname, "slices.csv"), DataFrame(id = Int[], sc = Float64[], tc = Float64[], r = Int[]))
+
+    num_unfinished = 1
+    num_finished = 0
+    round = 1
+
+    local flatten_unfinished
+    local unfinished_dir
+
+    time_start = time()
+    while true
+        old_unfinished_dir = joinpath(dirname, "unfinished_r$(round - 1)")
+        unfinished_dir = joinpath(dirname, "unfinished_r$(round)")
+        !isdir(unfinished_dir) && mkdir(unfinished_dir)
+
+        info_finished = [Vector{Tuple{Int, Float64, Float64, Int}}() for _ in 1:num_unfinished]
+        info_unfinished = [Vector{Tuple{Int, Float64, Float64, Int}}() for _ in 1:num_unfinished]
+
+        nt = Threads.nthreads()
+        chunks = collect(Iterators.partition(1:num_unfinished, ceil(Int, num_unfinished/nt)))
+
+        time_start = time()
+        Threads.@threads for chunk in chunks
+            for i in chunk
+                # load the branch
+                (new_branch, new_reducer) = round == 1 ? (branch, reducer) : load_unfinished(old_unfinished_dir, flatten_unfinished[i][1])
+
+                # generate new branches
+                uncompressed_code = uncompress(new_branch.code)
+                region, loss = ob_region(new_branch.g, uncompressed_code, slicer, slicer.region_selector, size_dict, verbose)
+                brs = optimal_branches(new_branch.g, uncompressed_code, new_branch.r, slicer, new_reducer, region, size_dict, verbose)
+
+                # update info, save finished or unfinished
+                for (nb, nr) in brs
+                    id = Int(time_ns())
+                    cc = complexity(nb)
+                    if cc.sc ≤ slicer.sc_target
+                        push!(info_finished[i], (id, cc.sc, cc.tc, nb.r))
+                        save_finished(dirname, nb, id)
+                    else
+                        push!(info_unfinished[i], (id, cc.sc, cc.tc, nb.r))
+                        save_unfinished(unfinished_dir, nb, nr, id)
+                    end
+                end
+            end
+        end
+        time_end = time()
+        (verbose ≥ 1) && @info "round: $round, time: $(time_end - time_start), average time: $((time_end - time_start) / num_unfinished)"
+
+        for i in 1:num_unfinished
+            for e in info_finished[i]
+                (id, sc, tc, r) = e
+                CSV.write(df, DataFrame(id = id, sc = sc, tc = tc, r = r), append = true)
+                num_finished += 1
+            end
+        end
+
+        # clean the old unfinished directory
+        round > 1 && rm(old_unfinished_dir, recursive = true)
+
+        flatten_unfinished = vcat(info_unfinished...)
+        isempty(flatten_unfinished) && break
+
+        num_unfinished = length(flatten_unfinished)
+        scs = [e[2] for e in flatten_unfinished]
+        verbose ≥ 1 && show_status(scs, slicer.sc_target, num_unfinished, num_finished)
+
+        round += 1
+    end
+    rm(unfinished_dir, recursive = true)
+
+    return nothing
 end
 
 function slice_tree(g::SimpleGraph, code::DynamicNestedEinsum, r::Int, slicer::AbstractSlicer, reducer::AbstractReducer; verbose::Int = 0)

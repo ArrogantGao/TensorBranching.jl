@@ -242,3 +242,12 @@ function _ssc!(code, size_dict)
     t = isempty(code.eins.iy) ? 1.0 : prod(Float64(size_dict[i]) for i in code.eins.iy)
     return t + sum(_ssc!(subcode, size_dict) for subcode in code.args)
 end
+
+function show_status(scs, sc_target, num_unfinished, num_finished)
+    @info "current num of unfinished slices: $num_unfinished, finished slices: $num_finished"
+    counts = zeros(Int, Int(maximum(scs) - minimum(scs) + 1))
+    for sc in scs
+        counts[Int(sc - minimum(scs) + 1)] += 1
+    end
+    println(barplot(Int(minimum(scs)):Int(maximum(scs)), counts, xlabel = "num of slices", ylabel = "sc, target = $(sc_target)"))
+end
