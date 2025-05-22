@@ -7,8 +7,8 @@ abstract type AbstractRegionSelector end
 # the maximum intersection region selector try to find the region with the maximum intersection with the largest tensors, where large means larger that the threshold
 @kwdef struct ScoreRS <: AbstractRegionSelector
     n_max::Int = 20
-    strategy::Symbol = :neighbor # :mincut or :neighbor
-    loss::Symbol = :sc_score # num_uniques or sc_score
+    strategy::Symbol = :neighbor # :neighbor
+    loss::Symbol = :sc_score # num_uniques or sc_score ro bag_score
 end
 
 abstract type AbstractBrancher end

@@ -1,6 +1,20 @@
 using OptimalBranching.OptimalBranchingCore: candidate_clauses, covered_items
 using OptimalBranching.OptimalBranchingMIS: removed_vertices
 
+function select_region(g::AbstractGraph, i::Int, n_max::Int, strategy::Symbol)
+    if strategy == :neighbor
+        vs = [i]
+        while length(vs) < n_max
+            nbrs = OptimalBranchingMIS.open_neighbors(g, vs)
+            (length(vs) + length(nbrs) > n_max) && break
+            append!(vs, nbrs)
+        end
+        return vs
+    else
+        error("Invalid strategy: $strategy, must be :neighbor")
+    end
+end
+
 function ob_region(g::SimpleGraph{Int}, code::DynamicNestedEinsum{Int}, slicer::ContractionTreeSlicer, selector::ScoreRS, size_dict::Dict{Int, Int}, verbose::Int)
 
     large_tensors = list_subtree(code, size_dict, slicer.sc_target)
@@ -10,12 +24,16 @@ function ob_region(g::SimpleGraph{Int}, code::DynamicNestedEinsum{Int}, slicer::
     regions = [Vector{Int}() for _ in unique_large_tensors_iys]
     Threads.@threads for i in 1:length(unique_large_tensors_iys)
         iy = unique_large_tensors_iys[i]
-        region_i = OptimalBranchingMIS.select_region(g, iy, selector.n_max, selector.strategy)
+        region_i = select_region(g, iy, selector.n_max, selector.strategy)
         regions[i] = region_i
     end
 
     if selector.loss == :sc_score
         losses = sc_score(slicer.sc_target, code, regions, size_dict)
+        best_loss = minimum(losses)
+        best_region = regions[argmin(losses)]
+    elseif selector.loss == :bag_score
+        losses = bag_score(slicer.sc_target, code, regions, size_dict)
         best_loss = minimum(losses)
         best_region = regions[argmin(losses)]
     elseif selector.loss == :num_uniques
@@ -111,6 +129,8 @@ end
 function slicer_loss(g::SimpleGraph{Int}, code::DynamicNestedEinsum{Int}, rvs::Vector{Vector{Int}}, brancher::GreedyBrancher, sc_target::Int, size_dict::Dict{Int, Int})
     if brancher.loss == :sc_score
         return sc_score(sc_target, code, rvs, size_dict)
+    elseif brancher.loss == :bag_score
+        return bag_score(sc_target, code, rvs, size_dict)
     else
         error("Loss function $(brancher.loss) not implemented")
     end
@@ -143,9 +163,28 @@ function sc_score(sc_target::Int, code::DynamicNestedEinsum{Int}, rvs::Vector{Ve
 end
 
 # tree bag score 
-function tb_score(sc_target::Int, code::DynamicNestedEinsum{Int}, rvs::Vector{Vector{Int}}, size_dict::Dict{Int, Int})
+function bag_score(sc_target::Int, code::DynamicNestedEinsum{Int}, rvs::Vector{Vector{Int}}, size_dict::Dict{Int, Int})
     tree = decompose(code)
-    # find all the tree bags that are larger than sc_target
+    scores = ones(Float64, length(rvs))
+    
+    intersects = Vector{Set{Int}}()
+    for node in PostOrderDFS(tree)
+        if !isempty(node.children)
+            for child in node.children
+                push!(intersects, intersect(node.bag, child.bag))
+            end
+        end
+    end
+
+    Threads.@threads for i in 1:length(rvs)
+        rv = rvs[i]
+        for lt_iy in intersects
+            t = max(0, length(lt_iy) - reduce((y, x) -> y += (x ∈ lt_iy), rv, init = 0) - sc_target)
+            scores[i] += 2.0^t - 1.0
+        end
+    end
+
+    return scores
 end
 
 # sc_measure is similar to the D3 measure, where each tensor is counted by (t - sc_target)
