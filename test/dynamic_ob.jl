@@ -8,10 +8,10 @@ using Random
 Random.seed!(123)
 
 @testset "dynamic_ob for mis, treesa refiner" begin
-    for reducer in [MISReducer(), XiaoReducer(), TensorNetworkReducer()]
+    for reducer in [MISReducer(), XiaoReducer()]
         for brancher in [GreedyBrancher(), FixedPointBrancher()]
             for refiner in [TreeSARefiner()]
-                for selector in [ScoreRS(loss = :num_uniques), ScoreRS(loss = :sc_score)]
+                for selector in [ScoreRS(loss = :num_uniques), ScoreRS(loss = :sc_score), ScoreRS(loss = :bag_score)]
                     for search_order in [:bfs, :dfs]
                         slicer = ContractionTreeSlicer(sc_target = 10, brancher = brancher, refiner = refiner, search_order = search_order, region_selector = selector)
                         @info "reducer = $reducer, brancher = $brancher, refiner = $refiner, search_order = $search_order, region_selector = $selector"

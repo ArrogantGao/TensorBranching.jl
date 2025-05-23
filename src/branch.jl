@@ -1,19 +1,5 @@
 using OptimalBranching.OptimalBranchingCore: candidate_clauses, covered_items
-using OptimalBranching.OptimalBranchingMIS: removed_vertices
-
-function select_region(g::AbstractGraph, i::Int, n_max::Int, strategy::Symbol)
-    if strategy == :neighbor
-        vs = [i]
-        while length(vs) < n_max
-            nbrs = OptimalBranchingMIS.open_neighbors(g, vs)
-            (length(vs) + length(nbrs) > n_max) && break
-            append!(vs, nbrs)
-        end
-        return vs
-    else
-        error("Invalid strategy: $strategy, must be :neighbor")
-    end
-end
+using OptimalBranching.OptimalBranchingMIS: removed_vertices, select_region
 
 function ob_region(g::SimpleGraph{Int}, code::DynamicNestedEinsum{Int}, slicer::ContractionTreeSlicer, selector::ScoreRS, size_dict::Dict{Int, Int}, verbose::Int)
 

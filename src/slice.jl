@@ -8,7 +8,7 @@ end
 function slice(branch::SlicedBranch, slicer::AbstractSlicer, reducer::AbstractReducer; verbose::Int = 0, dirname = nothing)
     size_dict = uniformsize(uncompress(branch.code), 2)
 
-    (complexity(branch).sc ≤ slicer.sc_target) && return [branch]
+    # (complexity(branch).sc ≤ slicer.sc_target) && return [branch]
 
     if slicer.search_order == :dfs
         slices = Vector{SlicedBranch{Int}}()
@@ -62,10 +62,20 @@ function _slice_bfs(branch::SlicedBranch, slicer::AbstractSlicer, reducer::Abstr
 
     id = 1
 
-    unfinished_slices = [(branch, reducer)]
-    finished_slices = Vector{SlicedBranch{Int}}()
-    cc = complexity(branch)
-    scs = [cc.sc]
+    # special case where the branch is already a slice
+    if (complexity(branch).sc ≤ slicer.sc_target)
+        if saveflag
+            cc = complexity(branch)
+            CSV.write(df, DataFrame(id = id, sc = cc.sc, tc = cc.tc, r = branch.r), append = true)
+            threaded_saveslices(dirname, [branch], [id])
+        end
+        return saveflag ? nothing : [branch]
+    else
+        unfinished_slices = [(branch, reducer)]
+        finished_slices = Vector{SlicedBranch{Int}}()
+        cc = complexity(branch)
+        scs = [cc.sc]
+    end
     
     while true
 
@@ -166,6 +176,13 @@ end
 
 function _slice_bfs_rw(branch::SlicedBranch, slicer::AbstractSlicer, reducer::AbstractReducer, size_dict::Dict{Int, Int}, verbose::Int, dirname)
     df = CSV.write(joinpath(dirname, "slices.csv"), DataFrame(id = Int[], sc = Float64[], tc = Float64[], r = Int[]))
+
+    if complexity(branch).sc ≤ slicer.sc_target
+        cc = complexity(branch)
+        CSV.write(df, DataFrame(id = 1, sc = cc.sc, tc = cc.tc, r = branch.r), append = true)
+        save_finished(dirname, branch, 1)
+        return nothing
+    end
 
     num_unfinished = 1
     num_finished = 0
