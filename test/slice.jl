@@ -41,3 +41,41 @@ end
     df = CSV.read(joinpath(temp_dir, "slices.csv"), DataFrame)
     @test length(df.id) == 1
 end
+
+@testset "slice tree for mwis" begin
+    g = random_regular_graph(200, 3)
+    weights = ones(nv(g))
+    code = initialize_code(g, TreeSA())
+    slicer = ContractionTreeSlicer(sc_target = 20, brancher = FixedPointBrancher(), refiner = TreeSARefiner(), search_order = :bfs)
+    reducer = MWISReducer()
+    tree = slice_tree(g, weights, code, 10, slicer, reducer)
+    
+    for node in PostOrderDFS(tree)
+        if TensorBranching.isslicingleaf(node)
+            @test TensorBranching.sc(node.node) ≤ slicer.sc_target
+        end
+    end
+end
+
+@testset "edge case: smaller than sc_target for mwis" begin
+    g = random_regular_graph(60, 3)
+    weights = ones(nv(g))
+    code = initialize_code(g, TreeSA())
+    reducer = MWISReducer()
+    for strategy in [:dfs, :bfs]
+        slicer = ContractionTreeSlicer(sc_target = 100, brancher = FixedPointBrancher(), refiner = TreeSARefiner(), search_order = strategy)
+        branches = slice(g, weights, code, 10, slicer, reducer)
+        @test length(branches) == 1
+    end
+
+    slicer_tree = ContractionTreeSlicer(sc_target = 100, brancher = FixedPointBrancher(), refiner = TreeSARefiner(), search_order = :tree)
+    tree = slice(g, weights, code, 10, slicer_tree, reducer)
+    @test tree.node.r == 10
+    @test isempty(tree.children)
+
+    temp_dir = tempdir()
+    slicer_bfs_rw = ContractionTreeSlicer(sc_target = 100, brancher = FixedPointBrancher(), refiner = TreeSARefiner(), search_order = :bfs_rw)
+    slice(g, weights, code, 10, slicer_bfs_rw, reducer, dirname = temp_dir)
+    df = CSV.read(joinpath(temp_dir, "slices.csv"), DataFrame)
+    @test length(df.id) == 1
+end

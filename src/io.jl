@@ -1,9 +1,9 @@
-function saveslices(filename::String, slices::Vector{SlicedBranch{TS}}) where {TS}
+function saveslices(filename::String, slices::Union{Vector{SlicedBranch{TS}},Vector{SlicedWeightedBranch{TS}}}) where {TS}
     @save filename slices
     return nothing
 end
 
-function threaded_saveslices(dirname::String, slices::Vector{SlicedBranch{TS}}, ids::Vector{Int}) where {TS}
+function threaded_saveslices(dirname::String, slices::Union{Vector{SlicedBranch{TS}},Vector{SlicedWeightedBranch{TS}}}, ids::Vector{Int}) where {TS}
     @assert length(slices) == length(ids)
     Threads.@threads for i in 1:length(slices)
         br = slices[i]
@@ -23,7 +23,7 @@ function loadslices(filename::String)
     return slices
 end
 
-function save_finished(dirname::String, branch::SlicedBranch, id::Int)
+function save_finished(dirname::String, branch::Union{SlicedBranch, SlicedWeightedBranch}, id::Int)
     graph_name = joinpath(dirname, "graph_$(id).dot")
     code_name = joinpath(dirname, "eincode_$(id).json")
     savegraph(graph_name, branch.g)
@@ -31,7 +31,7 @@ function save_finished(dirname::String, branch::SlicedBranch, id::Int)
     return nothing
 end
 
-function save_unfinished(dirname::String, branch::SlicedBranch, reducer::AbstractReducer, id::Int)
+function save_unfinished(dirname::String, branch::Union{SlicedBranch, SlicedWeightedBranch}, reducer::AbstractReducer, id::Int)
     filename = joinpath(dirname, "unfinished_$(id).jld")
     @save filename branch reducer
     return nothing

@@ -72,6 +72,36 @@ function generate_subsets(g::SimpleGraph{Int}, tbl::BranchingTable, region::Vect
     return subsets, rvs, fixed_ones
 end
 
+function generate_subsets(g::SimpleGraph{Int}, weights::Vector, tbl::BranchingTable, region::Vector{Int})
+
+    candidates = candidate_clauses(tbl)
+
+    dict_rvs = Dict{Vector{Int}, Vector{Int}}()
+    for (i, clause) in enumerate(candidates)
+        rv = sort!(removed_vertices(region, g, clause))
+        if haskey(dict_rvs, rv)
+            push!(dict_rvs[rv], i)
+        else
+            dict_rvs[rv] = [i]
+        end
+    end
+
+    rvs = collect(keys(dict_rvs))
+    subsets = Vector{Vector{Int}}()
+    fixed_ones = zeros(Int, length(rvs))
+    for (i, rv) in enumerate(rvs)
+        clauses_ids = dict_rvs[rv]
+        items = Vector{Int}()
+        for j in clauses_ids
+            append!(items, covered_items(tbl.table, candidates[j]))
+            fixed_ones[i] = max(fixed_ones[i], clause_weighted_size(weights,candidates[j].val & candidates[j].mask,region))
+        end
+        push!(subsets, unique!(items))
+    end
+    
+    return subsets, rvs, fixed_ones
+end
+
 function optimal_branches(g::SimpleGraph{Int}, code::DynamicNestedEinsum{Int}, r::Int, slicer::ContractionTreeSlicer, reducer::AbstractReducer, region::Vector{Int}, size_dict::Dict{Int, Int}, verbose::Int)
 
     cc = contraction_complexity(code, size_dict)
@@ -102,6 +132,46 @@ function optimal_branches(g::SimpleGraph{Int}, code::DynamicNestedEinsum{Int}, r
     brs = Vector{Tuple{SlicedBranch{Int}, AbstractReducer}}() # brs for branches and reducers
     for i in optimal_branches_ids
         new_branch, new_reducer = generate_branch(g, code, rvs[i], fixed_ones[i], slicer, reducer, size_dict)
+
+        (verbose ≥ 2) && (@info "branching id = $i, g: $(nv(new_branch.g)), $(ne(new_branch.g)), rv = $(rvs[i])")
+        (verbose ≥ 2) && (cc_ik = complexity(new_branch); @info "rethermalized code complexity: tc = $(cc_ik.tc), sc = $(cc_ik.sc)")
+
+        push!(brs, (add_r(new_branch, r), new_reducer))
+    end
+
+    return brs
+end
+
+function optimal_branches(g::SimpleGraph{Int}, weights::Vector, code::DynamicNestedEinsum{Int}, r, slicer::ContractionTreeSlicer, reducer::AbstractReducer, region::Vector{Int}, size_dict::Dict{Int, Int}, verbose::Int)
+
+    cc = contraction_complexity(code, size_dict)
+    (verbose ≥ 2) && (@info "solving g: $(nv(g)), $(ne(g)), code complexity: tc = $(cc.tc), sc = $(cc.sc)")
+
+    p = MWISProblem(g, weights)
+    tbl = branching_table(p, slicer.table_solver, region)
+    (verbose ≥ 2) && (@info "table: $(length(tbl.table))")
+
+    # special case: find reduction
+    reduction = OptimalBranchingCore.intersect_clauses(tbl, :dfs)
+    if !isempty(reduction)
+        c = reduction[1]
+        new_branch, new_reducer = generate_branch(g, weights, code, sort!(removed_vertices(region, g, c)),clause_weighted_size(weights,c.val,region), slicer, reducer, size_dict)
+        return [(add_r(new_branch, r), new_reducer)]
+    end
+
+    subsets, rvs, fixed_ones = generate_subsets(g, weights, tbl, region)  #fixed_ones: corresponding mwis
+    (verbose ≥ 2) && (@info "candidates: $(length(rvs))")
+
+    losses = slicer_loss(g, code, rvs, slicer.brancher, slicer.sc_target, size_dict)
+
+    ## calculate the loss and select the best ones
+    optimal_branches_ids = set_cover(slicer.brancher, losses, subsets, length(tbl.table))
+
+    (verbose ≥ 2) && (@info "length of optimal branches: $(length(optimal_branches_ids))")
+
+    brs = Vector{Tuple{SlicedWeightedBranch{Int}, AbstractReducer}}() # brs for branches and reducers
+    for i in optimal_branches_ids
+        new_branch, new_reducer = generate_branch(g, weights, code, rvs[i], fixed_ones[i], slicer, reducer, size_dict)
 
         (verbose ≥ 2) && (@info "branching id = $i, g: $(nv(new_branch.g)), $(ne(new_branch.g)), rv = $(rvs[i])")
         (verbose ≥ 2) && (cc_ik = complexity(new_branch); @info "rethermalized code complexity: tc = $(cc_ik.tc), sc = $(cc_ik.sc)")
@@ -223,4 +293,19 @@ function generate_branch(g::SimpleGraph{Int}, code::DynamicNestedEinsum{Int}, re
     re_code_ik = refine(code_ik, size_dict, slicer.refiner, slicer.sc_target, sc0)
 
     return (SlicedBranch(g_ik, re_code_ik, r_ik + r0), reducer_ik)
+end
+
+function generate_branch(g::SimpleGraph{Int}, weights::Vector, code::DynamicNestedEinsum{Int}, removed_vertices::Vector{Int}, r0, slicer::ContractionTreeSlicer, reducer::AbstractReducer, size_dict::Dict{Int, Int})
+    g_i, vmap_i = induced_subgraph(g, setdiff(1:nv(g), removed_vertices))
+    weights_i = weights[vmap_i]
+    g_ik, weights_ik, r_ik, vmap_ik, reducer_ik = kernelize(g_i, weights_i, reducer, vmap = vmap_i)
+
+    nv(g_ik) == 0 && return (SlicedWeightedBranch(g_ik, weights_ik, nothing, r_ik + r0), reducer_ik)
+
+    sc0 = contraction_complexity(code, size_dict).sc
+
+    code_ik = update_code(g_ik, code, vmap_ik)        
+    re_code_ik = refine(code_ik, size_dict, slicer.refiner, slicer.sc_target, sc0)
+
+    return (SlicedWeightedBranch(g_ik, weights_ik, re_code_ik, r_ik + r0), reducer_ik)
 end

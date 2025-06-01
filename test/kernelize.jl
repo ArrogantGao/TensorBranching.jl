@@ -29,3 +29,15 @@ Random.seed!(1234)
         @test length(reducer_new_new.region_list) == nv(g_new_new)
     end
 end
+
+@testset "kernelize for mwis" begin
+    g = random_regular_graph(100, 3)
+    weights = rand(nv(g))
+    reducer = TensorNetworkReducer()
+    g_new, weights_new, r, vmap, reducer_new = kernelize(g, weights, reducer)
+    problem = GenericTensorNetwork(IndependentSet(g, weights); optimizer = TreeSA())
+    mwis = solve(problem, SizeMax())[1].n
+    problemk = GenericTensorNetwork(IndependentSet(g_new, weights_new); optimizer = TreeSA())
+    mwisk = solve(problemk, SizeMax())[1].n + r
+    @test abs(mwis - mwisk) < 1e-12
+end
