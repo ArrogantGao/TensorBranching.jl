@@ -88,6 +88,7 @@ struct SlicedBranch{T}
         return new{T}(g, compress(code), r)
     end
 end
+
 function Base.show(io::IO, branch::SlicedBranch{T}) where T
     print(io, "SlicedBranch{$T}: ")
     print(io, "graph: {$(nv(branch.g)), $(ne(branch.g))} simple graph; ")
@@ -103,6 +104,7 @@ function complexity(branch::SlicedBranch)
     code = uncompress(branch.code)
     return contraction_complexity(code, uniformsize(code, 2))
 end
+
 tc(branch::SlicedBranch) = complexity(branch).tc
 sc(branch::SlicedBranch) = complexity(branch).sc
 
@@ -110,7 +112,53 @@ struct SlicingTree
     node::SlicedBranch
     children::Vector{SlicingTree}
 end
+
 AbstractTrees.nodevalue(tree::SlicingTree) = Int(sc(tree.node))
 AbstractTrees.children(tree::SlicingTree) = tree.children
 Base.show(io::IO, tree::SlicingTree) = print_tree(io, tree)
 isslicingleaf(tree::SlicingTree) = isempty(tree.children)
+
+struct SlicedWeightedBranch{T}
+    g::SimpleGraph{T}
+    weights::Vector
+    code::Union{CompressedEinsum{T}, Nothing}
+    r::Union{Int, Float64}
+    function SlicedWeightedBranch(g::SimpleGraph{T}, weights::Vector, ::Nothing, r) where T
+        return new{T}(g, weights, nothing, r)
+    end
+    function SlicedWeightedBranch(g::SimpleGraph{T}, weights::Vector, code::CompressedEinsum{T}, r) where T
+        return new{T}(g, weights, code, r)
+    end
+    function SlicedWeightedBranch(g::SimpleGraph{T}, weights::Vector, code::DynamicNestedEinsum{T}, r) where T
+        return new{T}(g, weights, compress(code), r)
+    end
+end
+
+function Base.show(io::IO, branch::SlicedWeightedBranch{T}) where T
+    print(io, "SlicedWeightedBranch{$T}: ")
+    print(io, "graph: {$(nv(branch.g)), $(ne(branch.g))} simple graph; ")
+    cc = complexity(branch)
+    print(io, "code complexity: sc: $(cc.sc), tc: $(cc.tc)")
+    print(io, "; fixed ones: $(branch.r)")
+end
+
+add_r(branch::SlicedWeightedBranch{T}, r) where T = SlicedWeightedBranch(branch.g, branch.weights, branch.code, branch.r + r)
+
+function complexity(branch::SlicedWeightedBranch)
+    isnothing(branch.code) && return OMEinsum.OMEinsumContractionOrders.ContractionComplexity(0.0, 0.0, 0.0)
+    code = uncompress(branch.code)
+    return contraction_complexity(code, uniformsize(code, 2))
+end
+
+tc(branch::SlicedWeightedBranch) = complexity(branch).tc
+sc(branch::SlicedWeightedBranch) = complexity(branch).sc
+
+struct SlicingWeightedTree
+    node::SlicedWeightedBranch
+    children::Vector{SlicingWeightedTree}
+end
+
+AbstractTrees.nodevalue(tree::SlicingWeightedTree) = Int(sc(tree.node))
+AbstractTrees.children(tree::SlicingWeightedTree) = tree.children
+Base.show(io::IO, tree::SlicingWeightedTree) = print_tree(io, tree)
+isslicingleaf(tree::SlicingWeightedTree) = isempty(tree.children)

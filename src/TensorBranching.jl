@@ -13,7 +13,7 @@ export AbstractRegionSelector, ScoreRS
 export AbstractSlicer, ContractionTreeSlicer
 export AbstractRefiner, TreeSARefiner, ReoptimizeRefiner
 export AbstractBrancher, GreedyBrancher, FixedPointBrancher
-export AbstractReducer, MISReducer, XiaoReducer, TensorNetworkReducer
+export AbstractReducer, MISReducer, MWISReducer, XiaoReducer, TensorNetworkReducer
 
 export SlicedBranch, CompressedEinsum
 
@@ -28,7 +28,7 @@ export mis_complexity, auto_slicing, random_ksg, contraction_peak_memory, contra
 # dynamic ob
 export kernelize, initialize_code, contract_slices
 export slice, slice_tree
-export dynamic_ob_mis
+export dynamic_ob_mis, dynamic_ob_mwis
 
 #io
 export saveslices, loadslices
