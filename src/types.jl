@@ -74,29 +74,30 @@ function uncompress(ce::CompressedEinsum{LT}) where LT
     return decorate(code)
 end
 
-struct SlicedBranch{T}
-    g::SimpleGraph{T}
-    code::Union{CompressedEinsum{T}, Nothing}
-    r::Int
-    function SlicedBranch(g::SimpleGraph{T}, ::Nothing, r::Int) where T
-        return new{T}(g, nothing, r)
+struct SlicedBranch{INT, VT, CT, RT}
+    p::MISProblem{INT, VT}
+    code::Union{CompressedEinsum{CT}, Nothing}
+    r::RT
+    function SlicedBranch(p::MISProblem{INT, VT}, ::Nothing, r::RT) where {INT, VT, RT}
+        return new{INT, VT, CT, RT}(p, nothing, r)
     end
-    function SlicedBranch(g::SimpleGraph{T}, code::CompressedEinsum{T}, r::Int) where T
-        return new{T}(g, code, r)
+    function SlicedBranch(p::MISProblem{INT, VT}, code::CompressedEinsum{CT}, r::RT) where {INT, VT, CT, RT}
+        return new{INT, VT, T}(p, code, r)
     end
-    function SlicedBranch(g::SimpleGraph{T}, code::DynamicNestedEinsum{T}, r::Int) where T
-        return new{T}(g, compress(code), r)
+    function SlicedBranch(p::MISProblem{INT, VT}, code::DynamicNestedEinsum{CT}, r::RT) where {INT, VT, CT, RT}
+        return new{INT, VT, CT, RT}(p, compress(code), r)
     end
 end
-function Base.show(io::IO, branch::SlicedBranch{T}) where T
-    print(io, "SlicedBranch{$T}: ")
-    print(io, "graph: {$(nv(branch.g)), $(ne(branch.g))} simple graph; ")
+function Base.show(io::IO, branch::SlicedBranch{INT, VT, CT, RT}) where {INT, VT, CT, RT}
+    print(io, "SlicedBranch{$INT, $VT, $CT, $RT}: ")
+    gtype = VT isa UnitWeight ? "simple graph" : "weighted graph"
+    print(io, "graph: {$(nv(branch.p.g)), $(ne(branch.p.g))} $gtype; ")
     cc = complexity(branch)
     print(io, "code complexity: sc: $(cc.sc), tc: $(cc.tc)")
-    print(io, "; fixed ones: $(branch.r)")
+    print(io, "; fixed weight: $(branch.r)")
 end
 
-add_r(branch::SlicedBranch{T}, r::Int) where T = SlicedBranch(branch.g, branch.code, branch.r + r)
+add_r(branch::SlicedBranch{INT, VT, CT, RT}, r::RT) where {INT, VT, CT, RT} = SlicedBranch(branch.p, branch.code, branch.r + r)
 
 function complexity(branch::SlicedBranch)
     isnothing(branch.code) && return OMEinsum.OMEinsumContractionOrders.ContractionComplexity(0.0, 0.0, 0.0)
