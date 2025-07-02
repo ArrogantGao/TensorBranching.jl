@@ -1,38 +1,18 @@
 # kernlize the graph, via reduction
-using OptimalBranching.OptimalBranchingMIS: reduce_graph, tn_reduce_graph
+using OptimalBranching.OptimalBranchingMIS: reduce_graph, ReductionResult
 
-function kernelize(g::SimpleGraph, reducer::AbstractReducer; verbose::Int = 0, vmap::Vector{Int} = collect(1:nv(g)))
+function kernelize(g::SimpleGraph, weights::VT, reducer::AbstractReducer; verbose::Int = 0, vmap::Vector{Int} = collect(1:nv(g))) where VT
     (verbose ≥ 2) && (@info "kernelizing graph: $(nv(g)) vertices, $(ne(g)) edges")
-    r = 0
+    r = zero(eltype(weights))
     while true
-        res = reduce_graph(g, reducer) # res = (g_new, r_new, vmap_new)
-        vmap = vmap[res[3]]
-        r += res[2]
-        if g == res[1]
+        res = reduce_graph(g, weights, reducer) # res = (g_new, r_new, vmap_new)
+        vmap = vmap[res.vmap]
+        weights = res.weights
+        r += res.r
+        if g == res.g
             (verbose ≥ 2) && (@info "kernelized graph: $(nv(g)) vertices, $(ne(g)) edges")
-            return (g, r, vmap, reducer)
+            return ReductionResult(g, weights, r, vmap)
         end
-        g = res[1]
-    end
-end
-
-# this will change the reducer
-function kernelize(g::SimpleGraph, reducer::TensorNetworkReducer; verbose::Int = 0, vmap::Vector{Int} = collect(1:nv(g)))
-    (verbose ≥ 2) && (@info "kernelizing graph: $(nv(g)) vertices, $(ne(g)) edges")
-    r = 0
-
-    vmap_0 = vmap
-    reducer = deepcopy(reducer)
-
-    while true
-        res = reduce_graph(g, reducer, vmap_0 = vmap_0) # res = (g_new, r_new, vmap_new)
-        vmap_0 = res[3]
-        vmap = vmap[res[3]]
-        r += res[2]
-        if g == res[1]
-            (verbose ≥ 2) && (@info "kernelized graph: $(nv(g)) vertices, $(ne(g)) edges")
-            return (g, r, vmap, reducer)
-        end
-        g = res[1]
+        g = res.g
     end
 end
