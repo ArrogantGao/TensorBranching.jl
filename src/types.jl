@@ -68,10 +68,18 @@ function compress(code::NestedEinsum)
     return CompressedEinsum(ixs, iy, ct)
 end
 
+function compress(::Nothing)
+    return nothing
+end
+
 function uncompress(ce::CompressedEinsum{LT}) where LT
     incidence_list = IncidenceList(Dict([i=>ix for (i, ix) in enumerate(ce.ixs)]))
     code = parse_eincode(incidence_list, ce.ct, vertices = collect(1:length(ce.ixs)))
     return decorate(code)
+end
+
+function uncompress(::Nothing)
+    return nothing
 end
 
 struct SlicedBranch{INT, VT, RT}
@@ -80,6 +88,11 @@ struct SlicedBranch{INT, VT, RT}
     r::RT
     function SlicedBranch(p::MISProblem{INT, VT}, ::Nothing, r::RT) where {INT, VT, RT}
         return new{INT, VT, RT}(p, nothing, r)
+    end
+    function SlicedBranch(g::SimpleGraph, weights::VT, code::DynamicNestedEinsum, r::RT) where {VT, RT}
+        p = MISProblem(g, weights)
+        INT = typeof(p).parameters[1]
+        return new{INT, VT, RT}(p, compress(code), r)
     end
     function SlicedBranch(p::MISProblem{INT, VT}, code::CompressedEinsum, r::RT) where {INT, VT, RT}
         return new{INT, VT, RT}(p, code, r)

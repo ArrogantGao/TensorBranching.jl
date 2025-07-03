@@ -61,8 +61,10 @@ function _slice_bfs(unfinished_slices::Vector{ST}, slicer::AbstractSlicer, reduc
 end
 
 function slice_bfs_rw(branch::SlicedBranch{INT, VT, RT}, slicer::AbstractSlicer, reducer::AbstractReducer, dirname::String, verbose::Int) where {INT, VT, RT}
-    size_dict = uniformsize(uncompress(branch.code), 2)
 
+    !isdir(dirname) && mkdir(dirname)
+
+    size_dict = uniformsize(uncompress(branch.code), 2)
     df = CSV.write(joinpath(dirname, "slices.csv"), DataFrame(id = Int[], sc = Float64[], tc = Float64[], r = RT[]))
 
     if complexity(branch).sc ≤ slicer.sc_target

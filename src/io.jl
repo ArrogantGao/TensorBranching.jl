@@ -47,12 +47,34 @@ function threaded_saveslices(dirname::String, slices::Vector{SlicedBranch}, ids:
     return nothing
 end
 
+function save_code(filename::String, code::DynamicNestedEinsum)
+    writejson(filename, code)
+    return nothing
+end
+
+function save_code(filename::String, code::Nothing)
+    open(filename, "w") do f
+        write(f, "nothing")
+    end
+    return nothing
+end
+
+function load_code(filename::String)
+    open(filename, "r") do f
+        line1 = readline(f)
+        if line1 == "nothing"
+            return nothing
+        end
+    end
+    return readjson(filename)
+end
+
 function save_finished(dirname::String, branch::SlicedBranch, id::Int)
     graph_name = joinpath(dirname, "graph_$(id).dot")
     code_name = joinpath(dirname, "eincode_$(id).json")
     weights_name = joinpath(dirname, "weights_$id.txt")
     savegraph(graph_name, branch.p.g)
-    writejson(code_name, uncompress(branch.code))
+    save_code(code_name, uncompress(branch.code))
     save_weights(weights_name, branch.p.weights)
     return nothing
 end
