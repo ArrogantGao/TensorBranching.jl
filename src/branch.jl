@@ -1,5 +1,5 @@
 using OptimalBranching.OptimalBranchingCore: candidate_clauses, covered_items
-using OptimalBranching.OptimalBranchingMIS: removed_vertices, select_region
+using OptimalBranching.OptimalBranchingMIS: removed_vertices, select_region, clause_size
 
 function ob_region(g::SimpleGraph{Int}, code::DynamicNestedEinsum{Int}, slicer::ContractionTreeSlicer, selector::ScoreRS, size_dict::Dict{Int, Int}, verbose::Int)
 
@@ -42,7 +42,7 @@ end
 
 # I notice that in some special cases, different candidates can have the same removed vertices
 # in this case, I merge the covered items of these candidates and take the maximum fixed ones
-function generate_subsets(g::SimpleGraph{Int}, tbl::BranchingTable, region::Vector{Int})
+function generate_subsets(g::SimpleGraph{Int}, weights::VT, tbl::BranchingTable, region::Vector{Int}) where VT
 
     candidates = candidate_clauses(tbl)
 
@@ -58,26 +58,25 @@ function generate_subsets(g::SimpleGraph{Int}, tbl::BranchingTable, region::Vect
 
     rvs = collect(keys(dict_rvs))
     subsets = Vector{Vector{Int}}()
-    fixed_ones = zeros(Int, length(rvs))
+    residuals = zeros(eltype(weights), length(rvs))
     for (i, rv) in enumerate(rvs)
         clauses_ids = dict_rvs[rv]
         items = Vector{Int}()
         for j in clauses_ids
             append!(items, covered_items(tbl.table, candidates[j]))
-            fixed_ones[i] = max(fixed_ones[i], count_ones(candidates[j].val & candidates[j].mask))
+            residuals[i] = max(residuals[i], clause_size(weights, candidates[j].val & candidates[j].mask, region))
         end
         push!(subsets, unique!(items))
     end
 
-    return subsets, rvs, fixed_ones
+    return subsets, rvs, residuals
 end
 
-function optimal_branches(g::SimpleGraph{Int}, code::DynamicNestedEinsum{Int}, r::Int, slicer::ContractionTreeSlicer, reducer::AbstractReducer, region::Vector{Int}, size_dict::Dict{Int, Int}, verbose::Int)
+function optimal_branches(p::MISProblem{INT, VT}, code::DynamicNestedEinsum{Int}, r::RT, slicer::ContractionTreeSlicer, reducer::AbstractReducer, region::Vector{Int}, size_dict::Dict{Int, Int}, verbose::Int) where {INT, VT, RT}
 
     cc = contraction_complexity(code, size_dict)
-    (verbose ≥ 2) && (@info "solving g: $(nv(g)), $(ne(g)), code complexity: tc = $(cc.tc), sc = $(cc.sc)")
+    (verbose ≥ 2) && (@info "solving g: $(nv(p.g)), $(ne(p.g)), code complexity: tc = $(cc.tc), sc = $(cc.sc)")
 
-    p = MISProblem(g)
     tbl = branching_table(p, slicer.table_solver, region)
     (verbose ≥ 2) && (@info "table: $(length(tbl.table))")
 
@@ -85,28 +84,28 @@ function optimal_branches(g::SimpleGraph{Int}, code::DynamicNestedEinsum{Int}, r
     reduction = OptimalBranchingCore.intersect_clauses(tbl, :dfs)
     if !isempty(reduction)
         c = reduction[1]
-        new_branch, new_reducer = generate_branch(g, code, sort!(removed_vertices(region, g, c)), count_ones(c.val & c.mask), slicer, reducer, size_dict)
-        return [(add_r(new_branch, r), new_reducer)]
+        new_branch = generate_branch(p, code, sort!(removed_vertices(region, p.g, c)), clause_size(p.weights, c.val & c.mask, region), slicer, reducer, size_dict)
+        return [add_r(new_branch, r)]
     end
 
-    subsets, rvs, fixed_ones = generate_subsets(g, tbl, region)
+    subsets, rvs, residuals = generate_subsets(p.g, p.weights, tbl, region)
     (verbose ≥ 2) && (@info "candidates: $(length(rvs))")
 
-    losses = slicer_loss(g, code, rvs, slicer.brancher, slicer.sc_target, size_dict)
+    losses = slicer_loss(p.g, code, rvs, slicer.brancher, slicer.sc_target, size_dict)
 
     ## calculate the loss and select the best ones
     optimal_branches_ids = set_cover(slicer.brancher, losses, subsets, length(tbl.table))
 
     (verbose ≥ 2) && (@info "length of optimal branches: $(length(optimal_branches_ids))")
 
-    brs = Vector{Tuple{SlicedBranch{Int}, AbstractReducer}}() # brs for branches and reducers
+    brs = Vector{SlicedBranch}() # brs for branches
     for i in optimal_branches_ids
-        new_branch, new_reducer = generate_branch(g, code, rvs[i], fixed_ones[i], slicer, reducer, size_dict)
+        new_branch = generate_branch(p, code, rvs[i], residuals[i], slicer, reducer, size_dict)
 
-        (verbose ≥ 2) && (@info "branching id = $i, g: $(nv(new_branch.g)), $(ne(new_branch.g)), rv = $(rvs[i])")
+        (verbose ≥ 2) && (@info "branching id = $i, g: $(nv(new_branch.p.g)), $(ne(new_branch.p.g)), rv = $(rvs[i])")
         (verbose ≥ 2) && (cc_ik = complexity(new_branch); @info "rethermalized code complexity: tc = $(cc_ik.tc), sc = $(cc_ik.sc)")
 
-        push!(brs, (add_r(new_branch, r), new_reducer))
+        push!(brs, add_r(new_branch, r))
     end
 
     return brs
@@ -211,16 +210,24 @@ function fixed_point_set_cover(solver::AbstractSetCoverSolver, losses::Vector{Fl
     return picked_scs
 end
 
-function generate_branch(g::SimpleGraph{Int}, code::DynamicNestedEinsum{Int}, removed_vertices::Vector{Int}, r0::Int, slicer::ContractionTreeSlicer, reducer::AbstractReducer, size_dict::Dict{Int, Int})
+function generate_branch(p::MISProblem{INT, VT}, code::DynamicNestedEinsum{Int}, removed_vertices::Vector{Int}, r0::RT, slicer::ContractionTreeSlicer, reducer::AbstractReducer, size_dict::Dict{Int, Int}) where {INT, VT, RT}
+    g = p.g
+    weights = p.weights
     g_i, vmap_i = induced_subgraph(g, setdiff(1:nv(g), removed_vertices))
-    g_ik, r_ik, vmap_ik, reducer_ik = kernelize(g_i, reducer, vmap = vmap_i)
+    weights_i = weights[vmap_i]
 
-    nv(g_ik) == 0 && return (SlicedBranch(g_ik, nothing, r_ik + r0), reducer_ik)
+    res = kernelize(g_i, weights_i, reducer, vmap = vmap_i)
+    g_ik = res.g
+    weights_ik = res.weights
+    r_ik = res.r
+    vmap_ik = res.vmap
+
+    nv(g_ik) == 0 && return SlicedBranch(MISProblem(g_ik, weights_ik), nothing, r_ik + r0)
 
     sc0 = contraction_complexity(code, size_dict).sc
 
     code_ik = update_code(g_ik, code, vmap_ik)        
     re_code_ik = refine(code_ik, size_dict, slicer.refiner, slicer.sc_target, sc0)
 
-    return (SlicedBranch(g_ik, re_code_ik, r_ik + r0), reducer_ik)
+    return SlicedBranch(MISProblem(g_ik, weights_ik), re_code_ik, r_ik + r0)
 end

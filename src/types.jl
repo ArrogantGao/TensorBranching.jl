@@ -1,6 +1,7 @@
 using OMEinsum: getixsv, getiyv, LeafString, flatten, _flatten, isleaf, decorate
 using OMEinsum.OMEinsumContractionOrders: IncidenceList, parse_eincode, eo2ct, ContractionTree
 using TensorBranching.GenericTensorNetworks: rawcode
+using OptimalBranching.OptimalBranchingCore: IPSolver, LPSolver
 
 abstract type AbstractRegionSelector end
 
@@ -41,7 +42,6 @@ abstract type AbstractSlicer end
 
 @kwdef struct ContractionTreeSlicer <: AbstractSlicer
     sc_target::Int = 30
-    search_order::Symbol = :bfs # :bfs, :dfs, :tree, or :bfs_rw
     region_selector::AbstractRegionSelector = ScoreRS() # select the region to branch, what else methods?
     table_solver::AbstractTableSolver = TensorNetworkSolver()
     brancher::AbstractBrancher = GreedyBrancher()
@@ -68,35 +68,49 @@ function compress(code::NestedEinsum)
     return CompressedEinsum(ixs, iy, ct)
 end
 
+function compress(::Nothing)
+    return nothing
+end
+
 function uncompress(ce::CompressedEinsum{LT}) where LT
     incidence_list = IncidenceList(Dict([i=>ix for (i, ix) in enumerate(ce.ixs)]))
     code = parse_eincode(incidence_list, ce.ct, vertices = collect(1:length(ce.ixs)))
     return decorate(code)
 end
 
-struct SlicedBranch{T}
-    g::SimpleGraph{T}
-    code::Union{CompressedEinsum{T}, Nothing}
-    r::Int
-    function SlicedBranch(g::SimpleGraph{T}, ::Nothing, r::Int) where T
-        return new{T}(g, nothing, r)
-    end
-    function SlicedBranch(g::SimpleGraph{T}, code::CompressedEinsum{T}, r::Int) where T
-        return new{T}(g, code, r)
-    end
-    function SlicedBranch(g::SimpleGraph{T}, code::DynamicNestedEinsum{T}, r::Int) where T
-        return new{T}(g, compress(code), r)
-    end
-end
-function Base.show(io::IO, branch::SlicedBranch{T}) where T
-    print(io, "SlicedBranch{$T}: ")
-    print(io, "graph: {$(nv(branch.g)), $(ne(branch.g))} simple graph; ")
-    cc = complexity(branch)
-    print(io, "code complexity: sc: $(cc.sc), tc: $(cc.tc)")
-    print(io, "; fixed ones: $(branch.r)")
+function uncompress(::Nothing)
+    return nothing
 end
 
-add_r(branch::SlicedBranch{T}, r::Int) where T = SlicedBranch(branch.g, branch.code, branch.r + r)
+struct SlicedBranch{INT, VT, RT}
+    p::MISProblem{INT, VT}
+    code::Union{CompressedEinsum, Nothing}
+    r::RT
+    function SlicedBranch(p::MISProblem{INT, VT}, ::Nothing, r::RT) where {INT, VT, RT}
+        return new{INT, VT, RT}(p, nothing, r)
+    end
+    function SlicedBranch(g::SimpleGraph, weights::VT, code::DynamicNestedEinsum, r::RT) where {VT, RT}
+        p = MISProblem(g, weights)
+        INT = typeof(p).parameters[1]
+        return new{INT, VT, RT}(p, compress(code), r)
+    end
+    function SlicedBranch(p::MISProblem{INT, VT}, code::CompressedEinsum, r::RT) where {INT, VT, RT}
+        return new{INT, VT, RT}(p, code, r)
+    end
+    function SlicedBranch(p::MISProblem{INT, VT}, code::DynamicNestedEinsum, r::RT) where {INT, VT, RT}
+        return new{INT, VT, RT}(p, compress(code), r)
+    end
+end
+function Base.show(io::IO, branch::SlicedBranch{INT, VT, RT}) where {INT, VT, RT}
+    print(io, "SlicedBranch{$INT, $VT, $RT}: ")
+    gtype = VT isa UnitWeight ? "simple graph" : "weighted graph"
+    print(io, "graph: {$(nv(branch.p.g)), $(ne(branch.p.g))} $gtype; ")
+    cc = complexity(branch)
+    print(io, "code complexity: sc: $(cc.sc), tc: $(cc.tc)")
+    print(io, "; fixed weight: $(branch.r)")
+end
+
+add_r(branch::SlicedBranch{INT, VT, RT}, r::RT) where {INT, VT, RT} = SlicedBranch(branch.p, branch.code, branch.r + r)
 
 function complexity(branch::SlicedBranch)
     isnothing(branch.code) && return OMEinsum.OMEinsumContractionOrders.ContractionComplexity(0.0, 0.0, 0.0)
@@ -105,12 +119,3 @@ function complexity(branch::SlicedBranch)
 end
 tc(branch::SlicedBranch) = complexity(branch).tc
 sc(branch::SlicedBranch) = complexity(branch).sc
-
-struct SlicingTree
-    node::SlicedBranch
-    children::Vector{SlicingTree}
-end
-AbstractTrees.nodevalue(tree::SlicingTree) = Int(sc(tree.node))
-AbstractTrees.children(tree::SlicingTree) = tree.children
-Base.show(io::IO, tree::SlicingTree) = print_tree(io, tree)
-isslicingleaf(tree::SlicingTree) = isempty(tree.children)

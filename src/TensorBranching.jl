@@ -3,7 +3,7 @@ module TensorBranching
 using OptimalBranching
 using OptimalBranching.OptimalBranchingCore, OptimalBranching.OptimalBranchingMIS
 
-using GenericTensorNetworks
+using GenericTensorNetworks, ProblemReductions
 using Graphs, TropicalNumbers, OMEinsum, AbstractTrees, TreeWidthSolver
 using JLD2, Random, UnicodePlots, CSV, DataFrames
 using Base.Threads
@@ -27,7 +27,7 @@ export mis_complexity, auto_slicing, random_ksg, contraction_peak_memory, contra
 
 # dynamic ob
 export kernelize, initialize_code, contract_slices
-export slice, slice_tree
+export slice, slice_bfs, slice_bfs_rw
 export dynamic_ob_mis
 
 #io
