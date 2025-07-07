@@ -5,13 +5,13 @@ function refine(code::DynamicNestedEinsum{LT}, size_dict::Dict{LT, Int}, refiner
     end
     sc = contraction_complexity(refined_code, size_dict).sc
     if sc > sc0
-        @info "Refiner did not improve the code, original sc = $sc0, got $sc, reoptimizing = $(refiner.reoptimize)"
+        # @info "Refiner did not improve the code, original sc = $sc0, got $sc, reoptimizing = $(refiner.reoptimize)"
         if refiner.reoptimize
             # refined_code = true_eincode(optimize_code(refined_code, size_dict, TreeSA(sc_target = sc_target)))
             reoptimized_code = rethermalize(refined_code, size_dict, 1.0:0.1:15.0, 5, 50, sc_target)
             resc = contraction_complexity(reoptimized_code, size_dict).sc
             refined_code = resc < sc ? reoptimized_code : refined_code
-            @info "Reoptimized the code, original sc = $sc0, refined sc = $sc, reoptimized sc = $resc"
+            # @info "Reoptimized the code, original sc = $sc0, refined sc = $sc, reoptimized sc = $resc"
         end
     end
     
