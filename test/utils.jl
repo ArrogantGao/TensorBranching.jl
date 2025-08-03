@@ -46,7 +46,7 @@ end
         n = 60
         g = random_regular_graph(n, 3)
         net = GenericTensorNetwork(IndependentSet(g), optimizer=TreeSA())
-        order = net.code.eins
+        order = net.code
         tensors = GenericTensorNetworks.generate_tensors(TropicalF32(1.0), net)
         
         n1 = neighbors(g, 1) ∪ [1]
@@ -60,12 +60,4 @@ end
         
         @test rt_order(tensors...)[].n ≈ sub_order(tensors...)[].n ≈ ri_order(tensors...)[].n ≈ rt_ri_order(tensors...)[].n ≈ mis2(EliminateGraph(subg))
     end
-end
-
-@testset "auto slicing" begin
-    g = random_ksg(20, 20, 0.8, 1234)
-    code = initialize_code(g, TreeSA())
-    sc_target = Int(mis_complexity(code).sc) - 2
-    scode = auto_slicing(code, sc_target)
-    @test mis_complexity(scode).sc == sc_target
 end

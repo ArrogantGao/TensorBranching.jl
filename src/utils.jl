@@ -140,7 +140,7 @@ function unsafe_flatten(code::DynamicNestedEinsum{LT}) where LT
 end
 
 function rethermalize(code::Union{DynamicNestedEinsum{LT}, SlicedEinsum{LT}}, size_dict::Dict{LT, Int}, βs::IT, ntrials::Int, niters::Int, sc_target::Int) where {LT, IT}
-    return optimize_code(code, size_dict, TreeSA(initializer = :specified, βs=βs, ntrials=ntrials, niters=niters, sc_target=sc_target))
+    return optimize_code(code, size_dict, TreeSA(initializer = :specified, βs=βs, ntrials=ntrials, niters=niters, score = ScoreFunction(sc_target = sc_target)))
 end
 
 
@@ -186,21 +186,6 @@ end
 
 function mis_complexity(code)
     return contraction_complexity(code, uniformsize(code, 2))
-end
-
-function auto_slicing(code, sc_target::Int)
-    sc_init = Int(mis_complexity(code).sc)
-    nslices = sc_init - sc_target
-    
-    local new_code
-    while true
-        new_code = optimize_code(code, uniformsize(code, 2), TreeSA(sc_target = sc_target, nslices = nslices))
-        cc = mis_complexity(new_code)
-        cc.sc <= sc_target && break
-        nslices += max(1, Int(cc.sc - sc_target))
-    end
-
-    return new_code
 end
 
 function random_ksg(m::Int, n::Int, rho::Float64, seed::Int)
