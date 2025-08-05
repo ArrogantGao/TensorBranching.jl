@@ -236,3 +236,37 @@ function show_status(scs, sc_target, num_unfinished, num_finished)
     end
     println(barplot(Int(minimum(scs)):Int(maximum(scs)), counts, xlabel = "num of slices", ylabel = "sc, target = $(sc_target)"))
 end
+
+function find_all_cliques(graph::AbstractGraph, min_size::Int=3)
+    P = Set(vertices(graph))
+    R = Set{Int}()
+    X = Set{Int}()
+    cliques = Vector{Set{Int}}()
+
+    bron_kerbosch(graph, R, P, X, cliques, min_size)
+    return cliques
+end
+
+function bron_kerbosch(graph::AbstractGraph, R::Set{Int}, P::Set{Int}, X::Set{Int}, cliques::Vector{Set{Int}}, min_size::Int)
+    if isempty(P) && isempty(X)
+
+        if length(R) >= min_size
+            push!(cliques, copy(R))
+        end
+        return
+    end
+
+    pivot = first(union(P, X))
+
+    for v in setdiff(P, Set(neighbors(graph, pivot)))
+        neighbors_v = Set(neighbors(graph, v))
+        bron_kerbosch(graph,
+            union(R, Set([v])),
+            intersect(P, neighbors_v),
+            intersect(X, neighbors_v),
+            cliques,
+            min_size)
+        P = setdiff(P, Set([v]))
+        X = union(X, Set([v]))
+    end
+end

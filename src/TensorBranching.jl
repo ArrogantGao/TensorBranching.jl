@@ -2,6 +2,7 @@ module TensorBranching
 
 using OptimalBranching
 using OptimalBranching.OptimalBranchingCore, OptimalBranching.OptimalBranchingMIS
+using OptimalBranching.OptimalBranchingCore.JuMP, OptimalBranching.OptimalBranchingCore.HiGHS
 
 using GenericTensorNetworks, ProblemReductions
 using Graphs, TropicalNumbers, OMEinsum, AbstractTrees, TreeWidthSolver
@@ -43,6 +44,7 @@ include("kernelize.jl")
 include("slice.jl")
 include("branch.jl")
 include("refine.jl")
+include("lp.jl")
 
 # io functions
 include("io.jl")
