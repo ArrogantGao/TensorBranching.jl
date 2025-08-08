@@ -83,7 +83,7 @@ function order2eincode(g::SimpleGraph{Int}, eo::Vector{Int}; use_tree::Bool = tr
                 grouped_eo = [[i] for i in eo if i in sub_vs]
             end
 
-            tree = eo2ct(grouped_eo, incidence_list, [1.0 for _ in 1:length(eo)], 0.0, 0.0, 1)
+            tree = eo2ct(grouped_eo, incidence_list, [1.0 for _ in 1:length(eo)])
             push!(trees, tree)
         end
     end
