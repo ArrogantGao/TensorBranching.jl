@@ -110,7 +110,7 @@ function Base.show(io::IO, branch::SlicedBranch{INT, VT, RT}) where {INT, VT, RT
     print(io, "; fixed weight: $(branch.r)")
 end
 
-add_r(branch::SlicedBranch{INT, VT, RT}, r::RT) where {INT, VT, RT} = SlicedBranch(branch.p, branch.code, branch.r + r)
+add_r(branch::SlicedBranch{INT, VT, RT1}, r::RT2) where {INT, VT, RT1, RT2} = SlicedBranch(branch.p, branch.code, RT1(branch.r + r))
 
 function complexity(branch::SlicedBranch)
     isnothing(branch.code) && return OMEinsum.OMEinsumContractionOrders.ContractionComplexity(0.0, 0.0, 0.0)
