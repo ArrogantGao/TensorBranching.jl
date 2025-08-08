@@ -271,8 +271,7 @@ function bron_kerbosch(graph::AbstractGraph, R::Set{Int}, P::Set{Int}, X::Set{In
     end
 end
 
-function LP_MWIS(graph::SimpleGraph,weights::Vector{Float64})
-    optimizer = SCIP.Optimizer
+function LP_MWIS(graph::SimpleGraph,weights::Vector{Float64}; optimizer = SCIP.Optimizer)
     model = Model(optimizer)  
     set_silent(model)  
     nsc = nv(graph)
@@ -293,10 +292,9 @@ function LP_MWIS(graph::SimpleGraph,weights::Vector{Float64})
     return objective_bound(model)
 end
 
-function IP_MWIS(graph::SimpleGraph,weights::Vector{Float64})
-    optimizer = SCIP.Optimizer
+function IP_MWIS(graph::SimpleGraph,weights::Vector{Float64}; optimizer = SCIP.Optimizer)
     model = Model(optimizer)  
-    # set_silent(model)  
+    set_silent(model)
     nsc = nv(graph)
     @variable(model, 0 <= x[i = 1:nsc] <= 1, Int)
     @objective(model, Max, sum(weights[i]*x[i] for i in 1:nsc))
@@ -311,8 +309,7 @@ function IP_MWIS(graph::SimpleGraph,weights::Vector{Float64})
     return objective_bound(model)
 end
 
-function quick_feasible_solution(graph::SimpleGraph,weights::Vector{Float64},time_limit::Float64)
-    optimizer = SCIP.Optimizer
+function quick_feasible_solution(graph::SimpleGraph,weights::Vector{Float64},time_limit::Float64; optimizer = SCIP.Optimizer)
     model = Model(optimizer)  
     set_silent(model)  
     set_optimizer_attribute(model, "limits/time", time_limit)
@@ -333,16 +330,8 @@ function quick_feasible_solution(graph::SimpleGraph,weights::Vector{Float64},tim
     return objective_value(model)
 end
 
-function solve_net(net, device::Int)
-    CUDA.device!(device)
-    time_start = time()
-    result = Array(solve(net, SizeMax(), T = Float32, usecuda = true))[1].n
-    time_end = time()
-    return result, time_end - time_start
-end
-
-function exact_solution(graph::SimpleGraph, weights::Vector{Float64},code::DynamicNestedEinsum) 
-    net = GenericTensorNetwork(IndependentSet(graph, weights), code, Dict{Int, Int}())
-    result, time = solve_net(net)
-    return result, time
+function solve_branch(branch::SlicedBranch; T::Type = Float32, usecuda::Bool = false)
+    net = GenericTensorNetwork(IndependentSet(branch.p.g, branch.p.weights), uncompress(branch.code), Dict{Int, Int}())
+    res =  Array(solve(net, SizeMax(), T = T, usecuda = usecuda))[].n
+    return res
 end

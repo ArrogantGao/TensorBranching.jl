@@ -5,10 +5,9 @@ using OptimalBranching.OptimalBranchingCore, OptimalBranching.OptimalBranchingMI
 
 using GenericTensorNetworks, ProblemReductions
 using Graphs, TropicalNumbers, OMEinsum, AbstractTrees, TreeWidthSolver, OMEinsumContractionOrders
+using JuMP, SCIP
 using JLD2, Random, UnicodePlots, CSV, DataFrames
 using Base.Threads
-using JuMP, SCIP
-using CUDA, CuTropicalGEMM 
 
 # types
 export AbstractRegionSelector, ScoreRS

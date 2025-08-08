@@ -10,45 +10,44 @@ function slice(p::MISProblem{INT, VT}, code::DynamicNestedEinsum, r::RT, slicer:
     end
 end
 
-function slice_lpscore(branch::SlicedBranch{INT, VT, RT}, slicer::AbstractSlicer, reducer::AbstractReducer, dirname::String, verbose::Int) where {INT, VT, RT}
+function slice_lpscore(branch::SlicedBranch{INT, VT, RT}, slicer::AbstractSlicer, reducer::AbstractReducer, dirname::String, usecuda::Bool, verbose::Int) where {INT, VT, RT}
+
     !isdir(dirname) && mkdir(dirname)
+    df = CSV.write(joinpath(dirname, "slices.csv"), DataFrame(id = Int[], sc = Float64[], tc = Float64[], r = RT[], lp_score = Float64[]))
+
     unfinished_slices = SlicedBranch[branch]
     scs = [complexity(branch).sc]
     size_dict = uniformsize(uncompress(branch.code), 2)
+
     primal_bound = 0.0
     info_finished = Vector{Tuple{Int, Float64, Float64, RT, Float64, Float64}}()
+
     while !isempty(unfinished_slices)
-        branch_to_slice = unfinished_slices[1]
+        branch_to_slice = pop!(unfinished_slices)
+
         cc = complexity(branch_to_slice)
-        deleteat!(unfinished_slices, 1)
-        deleteat!(scs, 1)
         if cc.sc ≤ slicer.sc_target
-            contract_info = exact_solution(branch_to_slice.p.g, branch_to_slice.p.weights, uncompress(branch_to_slice.code)) 
-            feasible_solution = contract_info[1] + branch_to_slice.r
-            runtime = contract_info[2]
+            feasible_solution = solve_branch(branch_to_slice, usecuda = usecuda) + branch_to_slice.r
             primal_bound = max(primal_bound, feasible_solution)
+
             id = Int(time_ns())
-            push!(info_finished, (id, cc.sc, cc.tc, branch_to_slice.r, feasible_solution, runtime))
+            CSV.write(df, DataFrame(id = id, sc = cc.sc, tc = cc.tc, r = branch_to_slice.r, lp_score = feasible_solution), append = true)   
             save_finished(dirname, branch_to_slice, id)
         else
             new_slices, new_scs, lp_scores = _slice_single(branch_to_slice, primal_bound, slicer, reducer, size_dict, verbose)
             if !isempty(new_slices)
                 for i in length(new_slices):-1:1
-                    insert!(unfinished_slices, 1, new_slices[i])
-                    insert!(scs, 1, new_scs[i])
+                    pushfirst!(unfinished_slices, new_slices[i])
+                    pushfirst!(scs, new_scs[i])
                 end
             end
         end
+
         if !isempty(unfinished_slices)
             verbose ≥ 1 && show_status(scs, slicer.sc_target, length(unfinished_slices), length(info_finished))
         end
     end
 
-    df = CSV.write(joinpath(dirname, "slices.csv"), DataFrame(id = Int[], sc = Float64[], tc = Float64[], r = RT[], lp_score = Float64[], runtime = Float64[]))
-    for e in info_finished
-        (id, sc, tc, r, lp_score, runtime) = e
-        CSV.write(df, DataFrame(id = id, sc = sc, tc = tc, r = r, lp_bound = lp_score, runtime = runtime), append = true)
-    end
     return nothing
 end
 
@@ -103,6 +102,7 @@ function _slice_bfs(unfinished_slices::Vector{ST}, slicer::AbstractSlicer, reduc
 end
 
 function _slice_single(slice::ST, primal_bound::Float64, slicer::AbstractSlicer, reducer::AbstractReducer, size_dict::Dict{Int, Int}, verbose::Int) where ST
+
     time_start = time()
     uncompressed_code = uncompress(slice.code)
     region, loss = ob_region(slice.p.g, uncompressed_code, slicer, slicer.region_selector, size_dict, verbose)
@@ -110,7 +110,7 @@ function _slice_single(slice::ST, primal_bound::Float64, slicer::AbstractSlicer,
     temp_slices = branches
 
     time_end = time()
-    (verbose ≥ 1) && @info "single slice time: $(time_end - time_start)"
+    (verbose ≥ 2) && @info "single slice time: $(time_end - time_start)"
 
     new_slices = SlicedBranch[]
     new_scs = Int[]
@@ -127,6 +127,7 @@ function _slice_single(slice::ST, primal_bound::Float64, slicer::AbstractSlicer,
     if isempty(lp_scores)
         return new_slices, new_scs, lp_scores
     end
+    
     graph_sizes = [nv(slice.p.g) for slice in new_slices]
     sorted_indices = sortperm(1:length(lp_scores), by=i -> (-lp_scores[i], graph_sizes[i]))
     return new_slices[sorted_indices], new_scs[sorted_indices], lp_scores[sorted_indices]
