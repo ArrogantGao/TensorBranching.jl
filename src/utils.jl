@@ -271,7 +271,7 @@ function bron_kerbosch(graph::AbstractGraph, R::Set{Int}, P::Set{Int}, X::Set{In
     end
 end
 
-function LP_MWIS(graph::SimpleGraph,weights::Vector{Float64}; optimizer = SCIP.Optimizer)
+function LP_MWIS(graph::SimpleGraph,weights::Vector{T}; optimizer = SCIP.Optimizer) where T
     model = Model(optimizer)  
     set_silent(model)  
     nsc = nv(graph)
@@ -292,7 +292,7 @@ function LP_MWIS(graph::SimpleGraph,weights::Vector{Float64}; optimizer = SCIP.O
     return objective_bound(model)
 end
 
-function IP_MWIS(graph::SimpleGraph,weights::Vector{Float64}; optimizer = SCIP.Optimizer)
+function IP_MWIS(graph::SimpleGraph,weights::Vector{T}; optimizer = SCIP.Optimizer) where T
     model = Model(optimizer)  
     set_silent(model)
     nsc = nv(graph)
@@ -309,7 +309,7 @@ function IP_MWIS(graph::SimpleGraph,weights::Vector{Float64}; optimizer = SCIP.O
     return objective_bound(model)
 end
 
-function quick_feasible_solution(graph::SimpleGraph,weights::Vector{Float64},time_limit::Float64; optimizer = SCIP.Optimizer)
+function quick_feasible_solution(graph::SimpleGraph,weights::Vector{T},time_limit::Float64; optimizer = SCIP.Optimizer) where T
     model = Model(optimizer)  
     set_silent(model)  
     set_optimizer_attribute(model, "limits/time", time_limit)
