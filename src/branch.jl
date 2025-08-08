@@ -13,7 +13,6 @@ function ob_region(g::SimpleGraph{Int}, code::DynamicNestedEinsum{Int}, slicer::
         region_i = select_region(g, iy, selector.n_max, selector.strategy)
         regions[i] = region_i
     end
-
     if selector.loss == :sc_score
         losses = sc_score(slicer.sc_target, code, regions, size_dict)
         best_loss = minimum(losses)

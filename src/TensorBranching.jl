@@ -4,9 +4,11 @@ using OptimalBranching
 using OptimalBranching.OptimalBranchingCore, OptimalBranching.OptimalBranchingMIS
 
 using GenericTensorNetworks, ProblemReductions
-using Graphs, TropicalNumbers, OMEinsum, AbstractTrees, TreeWidthSolver
+using Graphs, TropicalNumbers, OMEinsum, AbstractTrees, TreeWidthSolver, OMEinsumContractionOrders
 using JLD2, Random, UnicodePlots, CSV, DataFrames
 using Base.Threads
+using JuMP, SCIP
+using CUDA, CuTropicalGEMM 
 
 # types
 export AbstractRegionSelector, ScoreRS
@@ -27,7 +29,7 @@ export mis_complexity, auto_slicing, random_ksg, contraction_peak_memory, contra
 
 # dynamic ob
 export kernelize, initialize_code, contract_slices
-export slice, slice_bfs, slice_bfs_rw
+export slice, slice_bfs, slice_bfs_rw, slice_lpscore
 export dynamic_ob_mis
 
 #io

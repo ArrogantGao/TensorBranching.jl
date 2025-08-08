@@ -251,3 +251,113 @@ function show_status(scs, sc_target, num_unfinished, num_finished)
     end
     println(barplot(Int(minimum(scs)):Int(maximum(scs)), counts, xlabel = "num of slices", ylabel = "sc, target = $(sc_target)"))
 end
+
+function find_all_cliques(graph::AbstractGraph, min_size::Int=3)
+    P = Set(vertices(graph))  
+    R = Set{Int}()           
+    X = Set{Int}()           
+    cliques = Vector{Set{Int}}()
+    
+    bron_kerbosch(graph, R, P, X, cliques, min_size)
+    return cliques
+end
+
+function bron_kerbosch(graph::AbstractGraph, R::Set{Int}, P::Set{Int}, X::Set{Int}, cliques::Vector{Set{Int}}, min_size::Int)
+    if isempty(P) && isempty(X)
+
+        if length(R) >= min_size
+            push!(cliques, copy(R))
+        end
+        return
+    end
+    
+    pivot = first(union(P, X))
+    
+    for v in setdiff(P, Set(neighbors(graph, pivot)))
+        neighbors_v = Set(neighbors(graph, v))
+        bron_kerbosch(graph, 
+            union(R, Set([v])),
+            intersect(P, neighbors_v),
+            intersect(X, neighbors_v),
+            cliques,
+            min_size)
+        P = setdiff(P, Set([v]))
+        X = union(X, Set([v]))
+    end
+end
+
+function LP_MWIS(graph::SimpleGraph,weights::Vector{Float64})
+    optimizer = SCIP.Optimizer
+    model = Model(optimizer)  
+    set_silent(model)  
+    nsc = nv(graph)
+    @variable(model, 0 <= x[i = 1:nsc] <= 1)
+    @objective(model, Max, sum(weights[i]*x[i] for i in 1:nsc))
+
+    for e in edges(graph)
+        i = src(e)
+        j = dst(e)
+        @constraint(model, x[i]+x[j] <= 1)
+    end
+    cliques = find_all_cliques(graph,3)
+    for clique in cliques
+        @constraint(model, sum(x[i] for i in clique) <= 1)
+    end
+    optimize!(model)
+    
+    return objective_bound(model)
+end
+
+function IP_MWIS(graph::SimpleGraph,weights::Vector{Float64})
+    optimizer = SCIP.Optimizer
+    model = Model(optimizer)  
+    # set_silent(model)  
+    nsc = nv(graph)
+    @variable(model, 0 <= x[i = 1:nsc] <= 1, Int)
+    @objective(model, Max, sum(weights[i]*x[i] for i in 1:nsc))
+
+    for e in edges(graph)
+        i = src(e)
+        j = dst(e)
+        @constraint(model, x[i]+x[j] <= 1)
+    end
+    optimize!(model)
+    
+    return objective_bound(model)
+end
+
+function quick_feasible_solution(graph::SimpleGraph,weights::Vector{Float64},time_limit::Float64)
+    optimizer = SCIP.Optimizer
+    model = Model(optimizer)  
+    set_silent(model)  
+    set_optimizer_attribute(model, "limits/time", time_limit)
+    set_optimizer_attribute(model, "limits/gap", 0.1)
+    nsc = nv(graph)
+    @variable(model, 0 <= x[i = 1:nsc] <= 1, Int)
+    @objective(model, Max, sum(weights[i]*x[i] for i in 1:nsc))
+    for e in edges(graph)
+        i = src(e)
+        j = dst(e)
+        @constraint(model, x[i]+x[j] <= 1)
+    end
+    cliques = find_all_cliques(graph,3)
+    for clique in cliques
+        @constraint(model, sum(x[i] for i in clique) <= 1)
+    end
+    optimize!(model)
+    return objective_value(model)
+end
+
+function solve_net(net, device::Int)
+    CUDA.device!(device)
+    time_start = time()
+    result = Array(solve(net, SizeMax(), T = Float32, usecuda = true))[1].n
+    time_end = time()
+    return result, time_end - time_start
+end
+
+function exact_solution(graph::SimpleGraph, weights::Vector{Float64},code::DynamicNestedEinsum) 
+    net = GenericTensorNetwork(IndependentSet(graph, weights), code, Dict{Int, Int}())
+    result, time = solve_net(net)
+    return result, time
+end
