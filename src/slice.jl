@@ -19,8 +19,11 @@ function slice_dfs_lp(branch::SlicedBranch{INT, VT, RT}, slicer::AbstractSlicer,
     scs = [complexity(branch).sc]
     size_dict = uniformsize(uncompress(branch.code), 2)
 
+    lp_bound = LP_MWIS(branch.p.g, branch.p.weights)
     primal_bound = 0.0
-    info_finished = Vector{Tuple{Int, Float64, Float64, RT, Float64, Float64}}()
+    finished_count = 0
+
+    verbose ≥ 1 && @info "initial lp_bound: $lp_bound"
 
     while !isempty(unfinished_slices)
         branch_to_slice = pop!(unfinished_slices)
@@ -36,12 +39,14 @@ function slice_dfs_lp(branch::SlicedBranch{INT, VT, RT}, slicer::AbstractSlicer,
                 feasible_solution = solve_slice(branch_to_slice, element_type, usecuda) + branch_to_slice.r
             end
 
-            primal_bound = max(primal_bound, feasible_solution)
             verbose ≥ 1 && @info "feasible solution: $feasible_solution, primal bound: $primal_bound"
 
             id = Int(time_ns())
             CSV.write(df, DataFrame(id = id, sc = cc.sc, tc = cc.tc, r = branch_to_slice.r, solution = feasible_solution), append = true)   
             save_finished(dirname, branch_to_slice, id)
+            finished_count += 1
+            primal_bound = max(primal_bound, feasible_solution)
+            (feasible_solution ≈ lp_bound) && verbose ≥ 1 && @info "converged" &&return nothing
         else
             new_slices, new_scs, lp_scores = _slice_single(branch_to_slice, primal_bound, slicer, reducer, size_dict, verbose)
             if !isempty(new_slices)
@@ -53,7 +58,7 @@ function slice_dfs_lp(branch::SlicedBranch{INT, VT, RT}, slicer::AbstractSlicer,
         end
 
         if !isempty(unfinished_slices)
-            verbose ≥ 1 && show_status(scs, slicer.sc_target, length(unfinished_slices), length(info_finished))
+            verbose ≥ 1 && show_status(scs, slicer.sc_target, length(unfinished_slices), finished_count)
         end
     end
 
