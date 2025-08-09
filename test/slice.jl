@@ -2,6 +2,7 @@ using TensorBranching
 using OMEinsum, Graphs, AbstractTrees
 using CSV, DataFrames
 using GenericTensorNetworks, ProblemReductions
+using TropicalGEMM
 
 using Test
 using Random
@@ -31,4 +32,17 @@ end
         res = maximum(contract_slices(branches, Float32, false))
         @test res ≈ solve(GenericTensorNetwork(IndependentSet(g, ws), code, Dict{Int, Int}()), SizeMax(), T = Float32)[].n
     end
+end
+
+@testset "dfs lp" begin
+    temp_dir = tempdir()
+    g = random_regular_graph(100, 3)
+    code = initialize_code(g, TreeSA())
+    ws = ones(nv(g))
+    reducer = XiaoReducer()
+    slicer = ContractionTreeSlicer(sc_target = 10)
+    slice_dfs_lp(SlicedBranch(g, ws, code, zero(eltype(ws))), slicer, reducer, temp_dir, Float32, false, 1)
+
+    res = CSV.read(joinpath(temp_dir, "slices.csv"), DataFrame)
+    @test maximum(res.solution) ≈ solve(GenericTensorNetwork(IndependentSet(g, ws), code, Dict{Int, Int}()), SizeMax(), T = Float32)[].n
 end

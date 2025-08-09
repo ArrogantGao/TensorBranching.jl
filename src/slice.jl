@@ -10,10 +10,10 @@ function slice(p::MISProblem{INT, VT}, code::DynamicNestedEinsum, r::RT, slicer:
     end
 end
 
-function slice_lpscore(branch::SlicedBranch{INT, VT, RT}, slicer::AbstractSlicer, reducer::AbstractReducer, dirname::String, usecuda::Bool, verbose::Int) where {INT, VT, RT}
+function slice_dfs_lp(branch::SlicedBranch{INT, VT, RT}, slicer::AbstractSlicer, reducer::AbstractReducer, dirname::String, element_type::Type, usecuda::Bool, verbose::Int) where {INT, VT, RT}
 
     !isdir(dirname) && mkdir(dirname)
-    df = CSV.write(joinpath(dirname, "slices.csv"), DataFrame(id = Int[], sc = Float64[], tc = Float64[], r = RT[], lp_score = Float64[]))
+    df = CSV.write(joinpath(dirname, "slices.csv"), DataFrame(id = Int[], sc = Float64[], tc = Float64[], r = RT[], solution = Float64[]))
 
     unfinished_slices = SlicedBranch[branch]
     scs = [complexity(branch).sc]
@@ -24,14 +24,23 @@ function slice_lpscore(branch::SlicedBranch{INT, VT, RT}, slicer::AbstractSlicer
 
     while !isempty(unfinished_slices)
         branch_to_slice = pop!(unfinished_slices)
+        sc_to_slice = pop!(scs)
+
+        verbose ≥ 1 && @info "slicing branch with sc: $sc_to_slice"
 
         cc = complexity(branch_to_slice)
         if cc.sc ≤ slicer.sc_target
-            feasible_solution = solve_branch(branch_to_slice, usecuda = usecuda) + branch_to_slice.r
+            if iszero(cc.sc)
+                feasible_solution = branch_to_slice.r
+            else
+                feasible_solution = solve_slice(branch_to_slice, element_type, usecuda) + branch_to_slice.r
+            end
+
             primal_bound = max(primal_bound, feasible_solution)
+            verbose ≥ 1 && @info "feasible solution: $feasible_solution, primal bound: $primal_bound"
 
             id = Int(time_ns())
-            CSV.write(df, DataFrame(id = id, sc = cc.sc, tc = cc.tc, r = branch_to_slice.r, lp_score = feasible_solution), append = true)   
+            CSV.write(df, DataFrame(id = id, sc = cc.sc, tc = cc.tc, r = branch_to_slice.r, solution = feasible_solution), append = true)   
             save_finished(dirname, branch_to_slice, id)
         else
             new_slices, new_scs, lp_scores = _slice_single(branch_to_slice, primal_bound, slicer, reducer, size_dict, verbose)
@@ -103,33 +112,31 @@ end
 
 function _slice_single(slice::ST, primal_bound::Float64, slicer::AbstractSlicer, reducer::AbstractReducer, size_dict::Dict{Int, Int}, verbose::Int) where ST
 
-    time_start = time()
     uncompressed_code = uncompress(slice.code)
     region, loss = ob_region(slice.p.g, uncompressed_code, slicer, slicer.region_selector, size_dict, verbose)
     branches = optimal_branches(slice.p, uncompressed_code, slice.r, slicer, reducer, region, size_dict, verbose)
     temp_slices = branches
 
-    time_end = time()
-    (verbose ≥ 2) && @info "single slice time: $(time_end - time_start)"
-
     new_slices = SlicedBranch[]
     new_scs = Int[]
     lp_scores = Float64[]
-    for slice in temp_slices
+    for (i, slice) in enumerate(temp_slices)
         lp_score = LP_MWIS(slice.p.g, slice.p.weights) + slice.r
+        verbose ≥ 1 && @info "slice $i, lp_score: $lp_score, primal_bound: $primal_bound"
         if lp_score >= primal_bound + 0.99
             push!(lp_scores, lp_score)
-            push!(new_scs,complexity(slice).sc)
-            push!(new_slices,slice)
+            push!(new_scs, complexity(slice).sc)
+            push!(new_slices, slice)
         end
     end
     
     if isempty(lp_scores)
         return new_slices, new_scs, lp_scores
     end
-    
+
     graph_sizes = [nv(slice.p.g) for slice in new_slices]
-    sorted_indices = sortperm(1:length(lp_scores), by=i -> (-lp_scores[i], graph_sizes[i]))
+    sorted_indices = sortperm(1:length(lp_scores), by = i -> (- lp_scores[i], graph_sizes[i]))
+
     return new_slices[sorted_indices], new_scs[sorted_indices], lp_scores[sorted_indices]
 end
 

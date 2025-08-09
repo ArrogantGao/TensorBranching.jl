@@ -329,9 +329,3 @@ function quick_feasible_solution(graph::SimpleGraph,weights::Vector{T},time_limi
     optimize!(model)
     return objective_value(model)
 end
-
-function solve_branch(branch::SlicedBranch; T::Type = Float32, usecuda::Bool = false)
-    net = GenericTensorNetwork(IndependentSet(branch.p.g, branch.p.weights), uncompress(branch.code), Dict{Int, Int}())
-    res =  Array(solve(net, SizeMax(), T = T, usecuda = usecuda))[].n
-    return res
-end

@@ -28,7 +28,7 @@ export mis_complexity, auto_slicing, random_ksg, contraction_peak_memory, contra
 
 # dynamic ob
 export kernelize, initialize_code, contract_slices
-export slice, slice_bfs, slice_bfs_rw, slice_lpscore
+export slice, slice_bfs, slice_bfs_rw, slice_dfs_lp
 export dynamic_ob_mis
 
 #io
